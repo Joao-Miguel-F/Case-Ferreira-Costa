@@ -15,8 +15,12 @@ Análise completa de 24 meses de dados de uma rede de varejo de materiais de con
 ├── notebooks/                      # Análises por etapa
 │   ├── 01_etapa1_entendimento_dados.ipynb   # 📘 notebook executado (entregável de leitura)
 │   ├── 02_etapa2_estoque_projetado.ipynb    # 📘 notebook executado (com validações antes/depois)
+│   ├── 03_etapa3_desempenho_vendas.ipynb    # 📘 notebook executado (rankings, ABC e sazonalidade)
+│   ├── 04_etapa4_cobertura_categoria_loja.ipynb # 📘 notebook executado (cobertura por categoria/loja)
 │   ├── etapa1_entendimento_dados.py         # script-fonte de referência
-│   └── etapa2_estoque_projetado.py          # script-fonte de referência (corrigido)
+│   ├── etapa2_estoque_projetado.py          # script-fonte de referência (corrigido)
+│   ├── etapa3_desempenho_vendas.py          # script-fonte de referência
+│   └── etapa4_cobertura_categoria_loja.py   # script-fonte de referência
 │
 ├── src/
 │   └── utils.py                    # Funções e constantes compartilhadas
@@ -27,6 +31,8 @@ Análise completa de 24 meses de dados de uma rede de varejo de materiais de con
 ├── outputs/
 │   ├── etapa1/                     # Decisões de tratamento, dicionário de dados
 │   ├── etapa2/                     # Cobertura de estoque, investigação de outliers de preço
+│   ├── etapa3/                     # Rankings, ABC, categorias, lojas e sazonalidade
+│   ├── etapa4/                     # Cobertura por categoria/loja e priorização de reposição
 │   └── relatorio_qualidade_dados.html       # 📊 dashboard executivo (abre no navegador)
 │
 ├── requirements.txt
@@ -48,11 +54,19 @@ python etapa1_entendimento_dados.py
 # 3. Rodar Etapa 2 (estoque projetado e análise de cobertura — já com as correções)
 python etapa2_estoque_projetado.py
 
-# 4. (opcional) Reexecutar os notebooks de ponta a ponta
+# 4. Rodar Etapa 3 (desempenho de vendas, rankings, ABC e sazonalidade)
+python etapa3_desempenho_vendas.py
+
+# 5. Rodar Etapa 4 (cobertura por categoria/loja e priorização)
+python etapa4_cobertura_categoria_loja.py
+
+# 6. (opcional) Reexecutar os notebooks de ponta a ponta
 jupyter nbconvert --to notebook --execute --inplace 01_etapa1_entendimento_dados.ipynb
 jupyter nbconvert --to notebook --execute --inplace 02_etapa2_estoque_projetado.ipynb
+jupyter nbconvert --to notebook --execute --inplace 03_etapa3_desempenho_vendas.ipynb
+jupyter nbconvert --to notebook --execute --inplace 04_etapa4_cobertura_categoria_loja.ipynb
 
-# 5. (opcional) Regenerar o dashboard HTML a partir dos CSVs
+# 7. (opcional) Regenerar o dashboard HTML a partir dos CSVs
 cd ..
 python scripts/gerar_dashboard.py
 ```
@@ -62,9 +76,15 @@ python scripts/gerar_dashboard.py
 ### Abrir os entregáveis de leitura
 
 - **Dashboard executivo:** basta abrir `outputs/relatorio_qualidade_dados.html` no navegador
-  (duplo-clique). É autocontido — não precisa de servidor nem instalação.
-- **Notebooks executados:** `notebooks/01_etapa1_entendimento_dados.ipynb` e
-  `notebooks/02_etapa2_estoque_projetado.ipynb` já trazem todos os outputs salvos — podem ser
+  (duplo-clique). É autocontido — não precisa de servidor nem instalação. O dashboard consolida
+  qualidade de dados, estoque projetado, desempenho de vendas, cobertura por categoria/loja e
+  recomendações de melhoria. O
+  dicionário exibido no dashboard também é salvo em `outputs/dicionario_dados_projeto.csv` e cobre
+  bases tratadas e principais outputs analíticos.
+- **Notebooks executados:** `notebooks/01_etapa1_entendimento_dados.ipynb`,
+  `notebooks/02_etapa2_estoque_projetado.ipynb` e
+  `notebooks/03_etapa3_desempenho_vendas.ipynb` e
+  `notebooks/04_etapa4_cobertura_categoria_loja.ipynb` já trazem todos os outputs salvos — podem ser
   lidos direto no GitHub, VS Code ou Jupyter, sem rodar nada.
 
 ---
@@ -75,12 +95,12 @@ python scripts/gerar_dashboard.py
 |---|---|
 | Período analisado | jan/2024 – dez/2025 (24 meses) |
 | Receita total | R$ 482,5M |
-| Transações | 1.090.390 |
+| Linhas de venda (proxy de transações) | 1.090.390 |
 | SKUs ativos | 2.729 |
 | Lojas | 11 (5 estados) |
 | Categorias (Nível 1) | 23 |
 
-**Ponto de atenção — Loja 93 (Alhandra-PB):** opera como canal B2B/atacado com ticket médio 20× superior à rede e 76% da receita em Eletros. Todas as análises são apresentadas com e sem esta unidade para não distorcer os indicadores da rede física.
+**Ponto de atenção — Loja 93 (Alhandra-PB):** opera como canal B2B/atacado com receita média por linha de venda ~20× superior à rede e 76% da receita em Eletros. Todas as análises são apresentadas com e sem esta unidade para não distorcer os indicadores da rede física.
 
 ---
 
@@ -96,7 +116,7 @@ python scripts/gerar_dashboard.py
 
 **Achados principais:**
 - 80% da receita (R$385M) vem de SKUs sem compra registrada no período → estoque inicial é o principal ativo operacional
-- Loja 93 representa 31,8% da receita com apenas 12% dos SKUs → operação B2B
+- Loja 93 representa 31,8% da receita com apenas 12% dos SKUs → operação B2B/atacado
 - 2.549 SKUs com variação de preço >30% → possível inconsistência de precificação
 
 ### Etapa 2 — Estoque Projetado e Cobertura
@@ -117,6 +137,54 @@ Valores **pós-correção** (ver seção [Revisão de qualidade e correções](#
 | **Total** | **28.721** | **100%** |
 
 **Interpretação:** o alto percentual de ruptura é consistente com a descoberta da Etapa 1 — a rede opera principalmente do estoque inicial, sem reposição registrada em ~88% dos SKUs. Após a correção, o topo do ranking de reposição passou a incluir os pares de maior receita da base (Eletros da loja 93), antes invisíveis. O foco da Etapa 6 (plano de compras) deve priorizar os pares **em ruptura/crítico com maior receita histórica**.
+
+### Etapa 3 — Análise de Desempenho de Vendas
+
+Foram gerados rankings por receita e quantidade em unidade de armazenagem, curva ABC por receita, agregações por hierarquia de produto (`NIVEL_1`, `NIVEL_2`, `NIVEL_3`), loja, cidade/estado e evolução mensal. Todas as saídas têm visão de **rede completa** e **rede física sem Loja 93**.
+
+**Achados principais:**
+- Rede completa: R$ 482,5M, 1.090.390 linhas de venda (proxy de transações) e 2.729 SKUs ativos.
+- Loja 93: 31,8% da receita e 2,3% das linhas de venda, com receita média de R$ 6.160,07 por linha.
+- Rede física sem Loja 93: R$ 329,2M e 1.065.507 linhas de venda.
+- Produto líder por receita na rede completa: `467774` — COND.SPLIT 9000 COND.S3UQ09 INV. 143, com R$ 12,5M.
+- Produto líder por receita na rede física: `432048` — MASSA CORRIDA PVA CORAL PLS 25KG, com R$ 9,9M.
+- Curva A: 522 SKUs concentram 80,0% da receita na rede completa; sem Loja 93, são 713 SKUs.
+- A receita caiu 54,2% em 2025 vs 2024 na rede completa e 47,6% na rede física sem Loja 93.
+- A maior contribuição bruta para a queda de 2025 veio de `D - ELETROS` e, por loja, da Loja 93.
+
+**Limitações e cuidados:** a análise é descritiva; picos e quedas não são atribuídos a causa sem evidência adicional. `TRANSACOES` representa linhas de venda, não cupons únicos, pois a base não tem id de cupom/pedido/nota. Ticket médio = proxy de receita por linha de venda; preço médio = receita por unidade de armazenagem. A Loja 93 é segregada para evitar mistura entre atacado/B2B e rede física.
+
+**Como executar:**
+
+```bash
+cd notebooks
+python etapa3_desempenho_vendas.py
+```
+
+Arquivos auditáveis em `outputs/etapa3/`, incluindo rankings, curva ABC, desempenho por categorias/lojas, sazonalidade, decomposição da queda, notas metodológicas, recomendações de melhoria e `resumo_etapa3.md`.
+
+### Etapa 4 — Cobertura por Categoria e Loja
+
+A Etapa 4 agrega o snapshot de cobertura da Etapa 2 por `NIVEL_1`, `NIVEL_2`, `NIVEL_3`, loja e categoria×loja, cruzando com os outputs auditáveis da Etapa 3 para priorizar reposição por receita histórica em risco. A Loja 93 é mantida na rede completa, mas a priorização operacional compara a rede física separadamente.
+
+**Achados principais:**
+- Rede completa: 28.721 pares loja×produto; 26.713 (93,0%) em ruptura/crítico.
+- Receita histórica associada a pares em ruptura/crítico: R$ 464,6M na rede completa e R$ 316,3M na rede física sem Loja 93.
+- Categoria com maior receita em risco: `D - ELETROS` (R$ 190,7M na rede completa; R$ 78,8M na rede física).
+- Loja física com maior receita em risco: loja 3 (SALVADOR-BA), com R$ 58,7M em ruptura/crítico.
+- Maior prioridade categoria×loja na rede física: `D - ELETROS` na loja 92 (CABO DE SANTO AGOSTINHO-PE), com R$ 17,0M de receita em risco.
+- Loja 93 é analisada à parte: `D - ELETROS` concentra R$ 111,9M de receita em risco nesse canal.
+
+**Limitações e cuidados:** cobertura continua sendo uma métrica conservadora baseada nos dados disponíveis; não representa disponibilidade física real. `DIAS_COBERTURA` infinito/sem venda é contado separadamente, e médias/medianas usam apenas valores finitos. A ausência de transferências, ajustes de inventário, lead time e política de estoque limita a conversão direta da priorização em quantidade ideal de compra. `TRANSACOES` segue sendo proxy de linhas de venda nos cruzamentos com a Etapa 3.
+
+**Como executar:**
+
+```bash
+cd notebooks
+python etapa4_cobertura_categoria_loja.py
+```
+
+Arquivos auditáveis em `outputs/etapa4/`, incluindo cobertura por categorias/lojas, priorização categoria×loja, recomendações de melhoria, validações, `resumo_etapa4.md` e `documentacao_tecnica_etapa4.md`.
 
 ---
 
@@ -147,8 +215,6 @@ notebooks executados
 
 ## Próximas etapas (planejadas)
 
-- **Etapa 3** — Análise de desempenho de vendas: ranking, sazonalidade, curva ABC
-- **Etapa 4** — Análise de cobertura por categoria e loja
 - **Etapa 5** — Análise de precificação e variação de margem
 - **Etapa 6** — Projeção de compras para o próximo período
 - **Etapa 7** — Recomendações: promoções, descontinuações, repricing
