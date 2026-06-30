@@ -34,6 +34,7 @@ E1 = OUTPUTS / "etapa1"
 E2 = OUTPUTS / "etapa2"
 E3 = OUTPUTS / "etapa3"
 E4 = OUTPUTS / "etapa4"
+E5 = OUTPUTS / "etapa5"
 STATUS_ORDER = ["EM RUPTURA", "CRÍTICO", "ATENÇÃO", "SAUDÁVEL", "SEM VENDA"]
 
 # ── formatação pt-BR ────────────────────────────────────────────────────────
@@ -204,9 +205,11 @@ _TEMPLATE = r"""<!DOCTYPE html>
   <button class="nav-item" data-tab="t3"><span class="nav-num">3</span> Estoque projetado</button>
   <button class="nav-item" data-tab="t4"><span class="nav-num">4</span> Desempenho vendas</button>
   <button class="nav-item" data-tab="t5"><span class="nav-num">5</span> Cobertura cat./loja</button>
-  <button class="nav-item" data-tab="t6"><span class="nav-num">6</span> Bugs corrigidos</button>
-  <button class="nav-item" data-tab="t7"><span class="nav-num">7</span> Inconsistências</button>
-  <button class="nav-item" data-tab="t8"><span class="nav-num">8</span> Dicionário de dados</button>
+  <button class="nav-item" data-tab="te5"><span class="nav-num">6</span> Precificação e margem</button>
+  <button class="nav-item" data-tab="t6"><span class="nav-num">7</span> Bugs corrigidos</button>
+  <button class="nav-item" data-tab="t7"><span class="nav-num">8</span> Inconsistências</button>
+  <button class="nav-item" data-tab="t8"><span class="nav-num">9</span> Dicionário de dados</button>
+  <button class="nav-item" data-tab="t9"><span class="nav-num">10</span> Glossário comercial</button>
 </nav>
 
 <main class="main">
@@ -214,7 +217,7 @@ _TEMPLATE = r"""<!DOCTYPE html>
   <section id="t1" class="panel active">
     <span class="section-tag">Visão geral</span>
     <h1>Relatório de qualidade de dados</h1>
-    <p class="lead">Consolidação das Etapas 1, 2, 3 e 4 do case, da revisão de qualidade e das 4 correções
+    <p class="lead">Consolidação das Etapas 1 a 5 do case, da revisão de qualidade e das 4 correções
        aplicadas. Todos os números são lidos das bases tratadas e dos CSVs de saída.</p>
     <div class="kpi-grid" id="kpiGrid"></div>
     <h2>Linha do tempo</h2>
@@ -245,14 +248,16 @@ _TEMPLATE = r"""<!DOCTYPE html>
   <section id="t3" class="panel">
     <span class="section-tag">Etapa 2</span>
     <h1>Estoque projetado e cobertura</h1>
-    <p class="lead">Distribuição dos pares loja×produto por status de estoque, antes e depois das
-       correções, e os itens críticos de maior receita.</p>
+    <p class="lead">Distribuição dos pares loja×produto (cada produto dentro de cada loja) por status de
+       estoque, antes e depois das correções, e os itens críticos de maior receita. Termos técnicos estão
+       explicados em linguagem de negócio na aba <b>Glossário comercial</b>.</p>
     <div class="chart-box"><canvas id="statusChart"></canvas></div>
     <div class="method">
       <b>Metodologia:</b> <code>Estoque_t = Estoque_inicial + ΣEntradas − ΣSaídas</code>, com todas as
-      quantidades convertidas para a unidade de armazenagem. O snapshot é de dez/2025; a cobertura em
-      dias usa a venda média mensal da rede física. Pares com estoque ≤ 0 são classificados como
-      <b>Em Ruptura</b>.
+      quantidades convertidas para a unidade de armazenagem (a unidade padrão do estoque, p.ex. a caixa).
+      O snapshot (foto do estoque) é de dez/2025; a cobertura em dias estima por quantos dias o estoque
+      atende a venda média mensal da rede física. Pares com estoque ≤ 0 são classificados como
+      <b>Em Ruptura</b> (sem saldo para vender).
       <br><br><b>Limitações:</b> a ruptura de ~91% reflete a <b>ausência de registros de reposição</b>
       na base (~88% dos SKUs vendem sem compra registrada) — é um indicador de priorização relativa,
       não de disponibilidade física absoluta. A velocidade usa a média dos meses <i>com</i> venda
@@ -349,6 +354,58 @@ _TEMPLATE = r"""<!DOCTYPE html>
     </table></div></div>
   </section>
 
+  <!-- ABA 5b — ETAPA 5 -->
+  <section id="te5" class="panel">
+    <span class="section-tag">Etapa 5</span>
+    <h1>Precificação e margem</h1>
+    <p class="lead">Margem bruta realizada, markup, desconto efetivo vs. preço de lista e dispersão de
+       preço entre lojas. Tudo na mesma unidade (armazenagem) e com a Loja 93 (atacado/B2B) segregada.
+       Termos em linguagem de negócio na aba <b>Glossário comercial</b>.</p>
+    <div class="kpi-grid" id="e5KpiGrid"></div>
+    <div class="method">
+      <b>Metodologia:</b> preço praticado = <code>RECEITA / QTD_ARMAZENAGEM</code>; custo médio =
+      <code>PRECO_UNIT_UNIDADE_COMPRA / CONVERSAO_COMPRA_ARMAZENAGEM</code> (ponderado pela quantidade
+      comprada). Margem bruta % = (preço − custo) / preço; markup = preço / custo. O desconto efetivo
+      compara preço praticado e preço de lista <b>dentro da mesma embalagem</b>; a dispersão é o coeficiente
+      de variação do preço entre lojas, <b>separado por embalagem</b>.
+      <br><br><b>Limitações:</b> a margem realizada só existe para os ~261 SKUs com custo de compra válido
+      (~16% da receita) — o restante fica <b>sem margem por ausência de dado, não por erro</b>. O custo é a
+      média do período (sem camadas PEPS nem custo de reposição); o preço de lista pode não refletir promoções
+      pontuais, então o desconto efetivo é uma aproximação. Margens negativas (preço &lt; custo) são
+      <b>sinalizadas, não silenciadas</b>.
+    </div>
+
+    <h2>Margem por categoria (rede física)</h2>
+    <p class="lead">Ordenado por margem. <code>Cobertura</code> = quanto da receita da categoria tem custo
+       conhecido — margens com cobertura muito baixa não são representativas.</p>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>Categoria N1</th><th class="num">Receita c/ custo</th><th class="num">Cobertura</th>
+        <th class="num">Margem %</th><th class="num">Markup</th><th class="num">SKUs c/ custo</th></tr></thead>
+      <tbody id="e5CatBody"></tbody>
+    </table></div></div>
+
+    <h2>Melhores e piores margens (curva A, rede física)</h2>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>Tipo</th><th>Produto</th><th>Categoria</th><th class="num">Receita</th>
+        <th class="num">Preço praticado</th><th class="num">Custo médio</th><th class="num">Margem %</th>
+        <th class="num">Markup</th></tr></thead>
+      <tbody id="e5SkuBody"></tbody>
+    </table></div></div>
+
+    <h2>Candidatos a repricing (rede física)</h2>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>Rank</th><th>Prioridade</th><th>Motivos</th><th>Loja</th><th>Produto</th>
+        <th class="num">Receita</th><th class="num">Margem %</th><th class="num">Desconto efetivo</th></tr></thead>
+      <tbody id="e5CandBody"></tbody>
+    </table></div></div>
+
+    <h2>Revisão de qualidade (autoaudit antes/depois)</h2>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>Problema</th><th>Antes</th><th>Depois</th></tr></thead>
+      <tbody id="e5AuditBody"></tbody>
+    </table></div></div>
+  </section>
+
   <!-- ABA 6 -->
   <section id="t6" class="panel">
     <span class="section-tag">Revisão de qualidade</span>
@@ -377,6 +434,84 @@ _TEMPLATE = r"""<!DOCTYPE html>
     <div class="table-wrap"><div class="table-scroll"><table>
       <thead><tr><th>Campo</th><th>Descrição</th><th>Tipo</th><th>Tratamento</th></tr></thead>
       <tbody id="dicBody"></tbody>
+    </table></div></div>
+  </section>
+
+  <!-- ABA 9 -->
+  <section id="t9" class="panel">
+    <span class="section-tag">Referência</span>
+    <h1>Glossário comercial</h1>
+    <p class="lead">Tradução em linguagem de negócio dos termos técnicos usados no relatório, nos
+       notebooks e na documentação. Pensado para quem é de áreas como comercial, marketing e compras
+       e não precisa conhecer o detalhe técnico para ler os resultados.</p>
+    <div class="card" style="background:var(--accent-soft);border-color:var(--accent)">
+      <b>Leitura rápida do que mais importa:</b> esta análise reconstrói o estoque de cada produto em
+      cada loja a partir do histórico (estoque de abertura + compras − vendas) e usa a receita que cada
+      item já gerou para montar uma <b>fila de prioridade de reposição</b>. Os percentuais altos de
+      "ruptura" indicam <b>o que olhar primeiro</b>, não que as prateleiras estejam literalmente vazias.
+    </div>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th style="width:230px">Termo técnico</th><th>O que significa, em linguagem comercial</th></tr></thead>
+      <tbody>
+        <tr><td><b>SKU</b></td><td>Código único de um produto. Cada item distinto do catálogo é um SKU
+          (cores, tamanhos ou voltagens diferentes contam como SKUs diferentes).</td></tr>
+        <tr><td><b>Par loja × produto</b></td><td>Um produto específico dentro de uma loja específica. É o
+          menor nível de detalhe da análise de estoque: o mesmo produto em duas lojas são dois pares.</td></tr>
+        <tr><td><b>Unidade de armazenagem</b></td><td>A unidade padrão de contagem no estoque (por ex. a caixa).
+          Convertemos tudo para ela para não somar "3 caixas" com "5 unidades soltas" como se fossem iguais.</td></tr>
+        <tr><td><b>Estoque projetado</b></td><td>Estimativa do saldo de cada item, reconstruída pela conta
+          <i>estoque de abertura + compras − vendas</i>. <b>Não é uma contagem física</b> de prateleira.</td></tr>
+        <tr><td><b>Snapshot (foto)</b></td><td>A situação do estoque num momento específico — aqui, o fim do
+          período analisado (dez/2025).</td></tr>
+        <tr><td><b>Cobertura (dias de estoque)</b></td><td>Por quantos dias o estoque atual daria conta da venda
+          média. Pouca cobertura = risco de faltar produto em breve.</td></tr>
+        <tr><td><b>Ruptura</b></td><td>Item com estoque estimado zerado ou negativo — ou seja, sem saldo para
+          vender segundo o histórico disponível.</td></tr>
+        <tr><td><b>Crítico / Atenção / Saudável</b></td><td>Faixas de risco de estoque: <b>crítico</b> ≤ 30 dias
+          de cobertura, <b>atenção</b> até 90 dias, <b>saudável</b> acima disso.</td></tr>
+        <tr><td><b>Receita em risco</b></td><td>Quanto de receita esses itens <b>já geraram no passado</b>. Serve
+          para ordenar a fila de reposição (repor primeiro o que mais vende) — <b>não é uma perda prevista</b>.</td></tr>
+        <tr><td><b>Curva ABC</b></td><td>Regra de Pareto aplicada à receita: a <b>classe A</b> são os poucos
+          produtos que somam ~80% do faturamento; B e C têm peso decrescente.</td></tr>
+        <tr><td><b>Preço praticado</b></td><td>O preço médio que de fato saiu no caixa, por unidade de
+          armazenagem (receita ÷ quantidade). É o preço real de venda, não o de tabela.</td></tr>
+        <tr><td><b>Custo médio (CMV)</b></td><td>Quanto custou, em média, repor uma unidade — a média
+          ponderada do preço de compra no período. Só existe para itens com compra registrada.</td></tr>
+        <tr><td><b>Margem bruta (R$ e %)</b></td><td>O que sobra depois de pagar o custo: em reais
+          (preço − custo) e em proporção do preço (margem ÷ preço). Margem 50% = metade do preço é lucro bruto.</td></tr>
+        <tr><td><b>Markup</b></td><td>Quantas vezes o preço cobre o custo (preço ÷ custo). Markup 2× = o preço
+          é o dobro do custo. É outra forma de ver a margem.</td></tr>
+        <tr><td><b>Preço de lista</b></td><td>O preço de tabela cadastrado para o produto em cada loja e
+          embalagem — o preço "cheio", antes de desconto.</td></tr>
+        <tr><td><b>Desconto efetivo</b></td><td>Quanto o preço praticado ficou abaixo da tabela
+          (lista − praticado ÷ lista). Sempre comparado dentro da mesma embalagem. Desconto negativo = vendeu
+          acima da tabela (lista possivelmente desatualizada).</td></tr>
+        <tr><td><b>Dispersão de preço</b></td><td>O quanto o preço do mesmo produto varia entre lojas. Medido
+          por embalagem, para não confundir o preço da "caixa" com o da "unidade".</td></tr>
+        <tr><td><b>Repricing</b></td><td>Revisão de preço de itens com margem baixa/negativa, desconto fora do
+          padrão ou preço fora da faixa da rede.</td></tr>
+        <tr><td><b>Cobertura de custo</b></td><td>Quanto da receita está coberta por itens com custo conhecido.
+          Aqui é ~16%: a margem realizada só vale para esse subconjunto.</td></tr>
+        <tr><td><b>Rede física × atacado/B2B (Loja 93)</b></td><td>A Loja 93 vende em grande volume para outras
+          empresas (atacado), com ticket ~20× o das demais. Por isso ela é mostrada à parte, para não distorcer
+          a média das lojas de varejo.</td></tr>
+        <tr><td><b>Linhas de venda (TRANSACOES)</b></td><td>Cada linha de item vendido. Não é o número de
+          cupons/notas, porque a base não traz um identificador de cupom — por isso é uma medida aproximada.</td></tr>
+        <tr><td><b>Proxy</b></td><td>Uma medida aproximada usada quando o dado ideal não existe na base
+          (ex.: usar linhas de venda no lugar de número de cupons).</td></tr>
+        <tr><td><b>Ticket médio</b></td><td>Receita média por linha de venda. Aqui é uma aproximação, pela mesma
+          ausência de identificador de cupom.</td></tr>
+        <tr><td><b>Variação ano contra ano (YoY)</b></td><td>Comparação de um período com o mesmo período do ano
+          anterior (ex.: 2025 vs 2024), para isolar o efeito de sazonalidade.</td></tr>
+        <tr><td><b>Conservador (por construção)</b></td><td>Quando há dúvida, o método assume o pior cenário
+          (falta de estoque). Ele erra para <b>alertar a mais</b>, nunca a menos — é uma escolha de segurança.</td></tr>
+        <tr><td><b>Integridade referencial</b></td><td>Garantia de que os códigos batem entre as tabelas: todo
+          produto vendido existe no cadastro e toda venda pertence a uma loja válida.</td></tr>
+        <tr><td><b>Parquet</b></td><td>Formato de arquivo compactado e rápido para grandes volumes de dados,
+          usado internamente para acelerar o processamento (não precisa ser aberto manualmente).</td></tr>
+        <tr><td><b>Skeleton (malha base)</b></td><td>A grade inicial com todas as combinações loja × produto × mês,
+          montada <b>antes</b> de preencher vendas e compras — garante que nenhum item suma da conta de estoque.</td></tr>
+      </tbody>
     </table></div></div>
   </section>
 </main>
@@ -409,7 +544,8 @@ const steps=[["1","Etapa 1","Entendimento e limpeza dos dados brutos"],
   ["2","Etapa 2","Estoque projetado e cobertura"],
   ["3","Etapa 3","Desempenho de vendas, ABC e sazonalidade"],
   ["4","Etapa 4","Cobertura por categoria e loja"],
-  ["5","Revisão","Correções e limitações documentadas"]];
+  ["5","Etapa 5","Precificação e variação de margem"],
+  ["6","Revisão","Correções e limitações documentadas"]];
 document.getElementById("stepper").innerHTML = steps.map(([n,t,d])=>
   `<div class="step"><div class="dot">${n}</div><div class="st-t">${t}</div><div class="st-d">${d}</div></div>`).join("");
 
@@ -571,10 +707,43 @@ if(DATA.etapa4){
     `<td><b>${esc(r.tema)}</b></td><td>${esc(r.problema)}</td><td>${esc(r.recomendacao)}</td></tr>`).join("");
 }
 
+/* ---- ABA 5b: etapa 5 (precificacao e margem) ---- */
+if(DATA.etapa5){
+  const e5Kpis=[
+    ["margem_fisica","Margem % rede física"],
+    ["cobertura_custo","Cobertura de custo (receita)"],
+    ["skus_custo","SKUs com custo"],
+    ["desconto_medio","Desconto efetivo médio"],
+    ["candidatos","Candidatos a repricing"],
+    ["validacoes","Validações"]
+  ];
+  document.getElementById("e5KpiGrid").innerHTML = e5Kpis.map(([k,l])=>
+    `<div class="kpi"><div class="v">${esc(DATA.etapa5.kpis[k])}</div><div class="l">${l}</div></div>`).join("");
+  document.getElementById("e5CatBody").innerHTML = DATA.etapa5.categorias.map(r=>
+    `<tr><td>${esc(r.categoria)}</td><td class="num">${esc(r.receita_custo)}</td>`+
+    `<td class="num">${esc(r.cobertura)}</td><td class="num">${esc(r.margem)}</td>`+
+    `<td class="num">${esc(r.markup)}</td><td class="num">${esc(r.skus_custo)}</td></tr>`).join("");
+  document.getElementById("e5SkuBody").innerHTML = DATA.etapa5.skus.map(r=>
+    `<tr><td><span class="badge ${r.tipo==='Melhor'?'b-ok':'b-alto'}">${esc(r.tipo)}</span></td>`+
+    `<td><b>${esc(r.codigo)}</b><br><span class="muted">${esc(r.desc)}</span></td>`+
+    `<td>${esc(r.nivel1)}</td><td class="num">${esc(r.receita)}</td>`+
+    `<td class="num">${esc(r.preco)}</td><td class="num">${esc(r.custo)}</td>`+
+    `<td class="num">${esc(r.margem)}</td><td class="num">${esc(r.markup)}</td></tr>`).join("");
+  document.getElementById("e5CandBody").innerHTML = DATA.etapa5.candidatos.map(r=>
+    `<tr><td class="num">${esc(r.rank)}</td>`+
+    `<td><span class="badge ${r.faixa==='ALTA'?'sev-critico':(r.faixa==='MEDIA'?'sev-medio':'b-baixo')}">${esc(r.faixa)}</span></td>`+
+    `<td>${esc(r.motivos)}</td><td>${esc(r.loja)}</td>`+
+    `<td><b>${esc(r.codigo)}</b><br><span class="muted">${esc(r.desc)}</span></td>`+
+    `<td class="num">${esc(r.receita)}</td><td class="num">${esc(r.margem)}</td>`+
+    `<td class="num">${esc(r.desconto)}</td></tr>`).join("");
+  document.getElementById("e5AuditBody").innerHTML = DATA.etapa5.autoaudit.map(r=>
+    `<tr><td><b>${esc(r.problema)}</b></td><td>${esc(r.antes)}</td><td>${esc(r.depois)}</td></tr>`).join("");
+}
+
 /* ---- footer ---- */
 document.getElementById("footer").innerHTML =
   `Relatório gerado em <b>${esc(DATA.gerado_em)}</b> · Fonte: bases tratadas em `+
-  `<code>data/processed/</code> e saídas em <code>outputs/etapa1</code>, <code>outputs/etapa2</code>, <code>outputs/etapa3</code> e <code>outputs/etapa4</code> · `+
+  `<code>data/processed/</code> e saídas em <code>outputs/etapa1</code>…<code>outputs/etapa5</code> · `+
   `Case Técnico — Análise de Desempenho de Produtos no Varejo.`;
 </script>
 </body>
@@ -758,6 +927,79 @@ DESCRICOES_COLUNAS = {
     "PARTICIPACAO_RECEITA_REDE_COMPLETA_PCT": "Participação do segmento na receita da rede completa.",
     "PARTICIPACAO_QTD_REDE_COMPLETA_PCT": "Participação do segmento na quantidade da rede completa.",
     "PARTICIPACAO_TRANSACOES_REDE_COMPLETA_PCT": "Participação do segmento nas linhas de venda da rede completa.",
+    # ── Etapa 5: precificação e margem ──
+    "SKUS": "Quantidade de SKUs distintos no agrupamento.",
+    "SKUS_COM_CUSTO": "Quantidade de SKUs com custo de compra válido no agrupamento.",
+    "LINHAS_VENDA": "Quantidade de linhas de venda no agrupamento (proxy de transações).",
+    "RECEITA_TOTAL": "Receita total do agrupamento (todas as vendas).",
+    "QTD_ARM_TOTAL": "Quantidade total em unidade de armazenagem do agrupamento.",
+    "RECEITA_COM_CUSTO": "Receita das vendas de SKUs com custo conhecido (base da margem).",
+    "QTD_ARM_COM_CUSTO": "Quantidade em armazenagem das vendas com custo conhecido.",
+    "CMV": "Custo da mercadoria vendida: soma de custo médio por unidade × quantidade em armazenagem.",
+    "PRECO_PRATICADO_ARM": "Preço praticado por unidade de armazenagem: receita ÷ quantidade em armazenagem.",
+    "PRECO_PRATICADO_ARM_COM_CUSTO": "Preço praticado por unidade de armazenagem, restrito às vendas com custo.",
+    "CUSTO_MEDIO_ARM": "Custo médio por unidade de armazenagem: preço de compra ponderado ÷ conversão de compra.",
+    "CUSTO_MEDIO_ARM_PONDERADO": "Custo médio por unidade de armazenagem ponderado do agrupamento (CMV ÷ quantidade com custo).",
+    "MARGEM_BRUTA_RS_UNIT": "Margem bruta por unidade de armazenagem: preço praticado − custo médio.",
+    "MARGEM_BRUTA_RS": "Margem bruta por unidade de armazenagem do SKU: preço praticado − custo médio.",
+    "MARGEM_BRUTA_TOTAL": "Margem bruta total do agrupamento: receita com custo − CMV.",
+    "MARGEM_BRUTA_PCT": "Margem bruta percentual: margem bruta ÷ preço praticado (ou ÷ receita com custo no agregado).",
+    "MARKUP": "Markup do SKU: preço praticado ÷ custo médio.",
+    "MARKUP_PONDERADO": "Markup ponderado do agrupamento: receita com custo ÷ CMV.",
+    "COBERTURA_CUSTO_RECEITA_PCT": "Percentual da receita do agrupamento que tem custo conhecido.",
+    "PART_RECEITA_UNIVERSO_PCT": "Participação da receita do agrupamento na receita do universo.",
+    "FLAG_MARGEM_NEGATIVA": "Flag 1/0 indicando margem bruta negativa (preço < custo).",
+    "PRECO_COMPRA_PONDERADO_UNID_COMPRA": "Preço de compra médio ponderado por unidade de compra.",
+    "CONVERSAO_COMPRA_ARMAZENAGEM": "Fator que converte a unidade de compra para a unidade de armazenagem.",
+    "COMPRAS_LINHAS_COM_PRECO": "Quantidade de linhas de compra com preço usadas no custo do SKU.",
+    "CURVA_ABC_RECEITA": "Classe ABC por receita acumulada: A até 80%, B até 95%, C restante.",
+    "RANK_RECEITA": "Ranking decrescente por receita.",
+    "QUANTIDADE_VENDIDA": "Quantidade vendida na unidade comercial original.",
+    "EMBALAGEM": "Código da embalagem da venda (0 unidade, 1 caixa, 2 fardo/pacote maior).",
+    "PRECO_PRATICADO_VENDA": "Preço praticado por unidade da embalagem vendida (mesma base do preço de lista).",
+    "PRECO_LISTA_EMBALAGEM": "Preço de lista da mesma embalagem da venda (PRECO_EMBALAGEM_0/1/2).",
+    "PRECO_EMBALAGEM_0": "Preço de lista cadastrado para a embalagem 0 (unidade).",
+    "PRECO_EMBALAGEM_1": "Preço de lista cadastrado para a embalagem 1 (caixa).",
+    "PRECO_EMBALAGEM_2": "Preço de lista cadastrado para a embalagem 2 (fardo/pacote maior).",
+    "PERC_DESCTO_ADICIONAL_EMBALAGEM_0": "Percentual de desconto adicional de catálogo para a embalagem 0.",
+    "DESCONTO_EFETIVO_PCT": "Desconto efetivo: (preço de lista − preço praticado) ÷ preço de lista, na mesma embalagem.",
+    "DESCONTO_CATALOGO_PCT": "Desconto adicional cadastrado em catálogo (embalagem 0).",
+    "FLAG_PRECO_ACIMA_LISTA": "Flag 1/0 indicando preço praticado acima do preço de lista (desconto negativo).",
+    "FLAG_SEM_PRECO_LISTA": "Flag 1/0 indicando ausência de preço de lista para a embalagem.",
+    "LOJAS_ATIVAS": "Quantidade de lojas distintas com venda do SKU.",
+    "LOJAS": "Quantidade de lojas distintas com preço do SKU na embalagem.",
+    "PRECO_ARM_MEDIO": "Preço médio por unidade de armazenagem entre lojas (SKU × embalagem).",
+    "PRECO_ARM_MEDIANA": "Preço mediano por unidade de armazenagem entre lojas (SKU × embalagem).",
+    "PRECO_ARM_DESVPAD": "Desvio padrão do preço por unidade de armazenagem entre lojas.",
+    "PRECO_ARM_MIN": "Menor preço por unidade de armazenagem entre lojas.",
+    "PRECO_ARM_MAX": "Maior preço por unidade de armazenagem entre lojas.",
+    "CV_PRECO": "Coeficiente de variação do preço entre lojas (desvio padrão ÷ média), por embalagem.",
+    "AMPLITUDE_PCT": "Amplitude do preço entre lojas: (máximo − mínimo) ÷ média.",
+    "FLAG_DISPERSAO_ALTA": "Flag 1/0 indicando dispersão de preço alta (CV > 30%).",
+    "RANK_PRIORIDADE": "Ranking de prioridade do candidato a repricing dentro do universo.",
+    "SCORE_PRIORIDADE": "Score de priorização do candidato: nº de sinais + percentil de receita.",
+    "RECEITA_PERCENTIL": "Percentil de receita do candidato dentro do conjunto de candidatos.",
+    "FAIXA_PRIORIDADE": "Faixa de prioridade do candidato: ALTA, MEDIA ou MONITORAR.",
+    "VALIDACAO": "Nome da checagem de reconciliação numérica executada.",
+    "OBSERVADO": "Valor observado na checagem.",
+    "ESPERADO": "Valor esperado na checagem.",
+    "DIFERENCA": "Diferença entre observado e esperado.",
+    "STATUS": "Resultado da checagem: OK ou FALHA.",
+    "N_MOTIVOS": "Quantidade de sinais que tornam o item candidato a repricing.",
+    "MOTIVOS": "Sinais identificados: margem baixa/negativa, desconto alto e/ou preço fora da faixa.",
+    "PRECO_ARM_MEDIANA_REDE": "Preço mediano da rede para o SKU × embalagem, base da comparação de faixa.",
+    "DESVIO_VS_MEDIANA_PCT": "Desvio percentual do preço da loja vs. a mediana da rede.",
+    "LOJAS_NA_REDE": "Quantidade de lojas com preço do SKU × embalagem na rede.",
+    "MOTIVO_MARGEM_BAIXA": "Flag 1/0: margem bruta abaixo do limiar (item com custo).",
+    "MOTIVO_DESCONTO_ALTO": "Flag 1/0: desconto efetivo acima do limiar.",
+    "MOTIVO_PRECO_FORA_FAIXA": "Flag 1/0: preço fora da faixa da rede (desvio vs. mediana acima do limiar).",
+    "PROBLEMA": "Problema, limitação ou achado de qualidade identificado.",
+    "DESCRICAO_AUDIT": "Descrição do problema de qualidade na autoaudit.",
+    "CORRECAO": "Correção adotada para o problema identificado.",
+    "ANTES": "Situação/metragem antes da correção.",
+    "DEPOIS": "Situação/metragem depois da correção.",
+    "IMPACTO": "Impacto mensurável da correção.",
+    "LIMITACAO_OU_PROBLEMA": "Limitação de dados/modelagem/processo identificada.",
     "PRIORIDADE": "Prioridade da recomendação de melhoria.",
     "TEMA": "Tema da nota metodológica ou recomendação.",
     "PROBLEMA": "Problema ou limitação identificada.",
@@ -848,6 +1090,18 @@ artefatos_dicionario = [
     (E4 / "priorizacao_reposicao_categoria_loja.csv", "output_etapa4.priorizacao_reposicao_categoria_loja"),
     (E4 / "recomendacoes_melhoria.csv", "output_etapa4.recomendacoes_melhoria"),
     (E4 / "validacoes_etapa4.csv", "output_etapa4.validacoes_etapa4"),
+    (E5 / "margem_produtos.csv", "output_etapa5.margem_produtos"),
+    (E5 / "margem_categorias_n1.csv", "output_etapa5.margem_categorias_n1"),
+    (E5 / "margem_categorias_n2.csv", "output_etapa5.margem_categorias_n2"),
+    (E5 / "margem_categorias_n3.csv", "output_etapa5.margem_categorias_n3"),
+    (E5 / "margem_lojas.csv", "output_etapa5.margem_lojas"),
+    (E5 / "precificacao_desconto.csv", "output_etapa5.precificacao_desconto"),
+    (E5 / "dispersao_preco_lojas.csv", "output_etapa5.dispersao_preco_lojas"),
+    (E5 / "candidatos_repricing.csv", "output_etapa5.candidatos_repricing"),
+    (E5 / "recomendacoes_melhoria.csv", "output_etapa5.recomendacoes_melhoria"),
+    (E5 / "validacoes_etapa5.csv", "output_etapa5.validacoes_etapa5"),
+    (E5 / "autoaudit_etapa5.csv", "output_etapa5.autoaudit_etapa5"),
+    (E5 / "margem_total_universo.csv", "output_etapa5.margem_total_universo"),
 ]
 for path, tabela in artefatos_dicionario:
     if path.exists():
@@ -1166,6 +1420,100 @@ if (E4 / "cobertura_categorias_n1.csv").exists():
         "recomendacoes": rec_rows4,
     }
 
+# ---- Etapa 5: precificacao e margem ----
+print("Carregando saidas da Etapa 5...")
+etapa5 = None
+if (E5 / "margem_total_universo.csv").exists():
+    e5_total = pd.read_csv(E5 / "margem_total_universo.csv", encoding="utf-8-sig")
+    e5_cat = pd.read_csv(E5 / "margem_categorias_n1.csv", encoding="utf-8-sig")
+    e5_sku = pd.read_csv(E5 / "margem_produtos.csv", encoding="utf-8-sig")
+    e5_cand = pd.read_csv(E5 / "candidatos_repricing.csv", encoding="utf-8-sig")
+    e5_desc = pd.read_csv(E5 / "precificacao_desconto.csv", encoding="utf-8-sig")
+    e5_audit = pd.read_csv(E5 / "autoaudit_etapa5.csv", encoding="utf-8-sig")
+    e5_valid = pd.read_csv(E5 / "validacoes_etapa5.csv", encoding="utf-8-sig")
+
+    tc5 = e5_total[e5_total["UNIVERSO"] == "REDE_COMPLETA"].iloc[0]
+    tf5 = e5_total[e5_total["UNIVERSO"] == "REDE_FISICA_SEM_LOJA93"].iloc[0]
+
+    def fmt_markup(v):
+        return f"{float(v):.2f}x".replace(".", ",")
+
+    def fmt_compact(v):
+        v = float(v)
+        return fmt_milhao(v) if abs(v) >= 1e6 else fmt_reais(v, 0)
+
+    desc_fis5 = e5_desc[(e5_desc["UNIVERSO"] == "REDE_FISICA_SEM_LOJA93") & e5_desc["DESCONTO_EFETIVO_PCT"].notna()]
+    desc_medio5 = float(np.average(desc_fis5["DESCONTO_EFETIVO_PCT"], weights=desc_fis5["RECEITA"]))
+
+    cand_fis5 = e5_cand[e5_cand["UNIVERSO"] == "REDE_FISICA_SEM_LOJA93"]
+    cand_alta5 = int((cand_fis5["FAIXA_PRIORIDADE"] == "ALTA").sum())
+
+    # Categorias da rede fisica com cobertura representativa (>=10%), ordenadas por margem.
+    cat_fis5 = e5_cat[e5_cat["UNIVERSO"] == "REDE_FISICA_SEM_LOJA93"].copy()
+    cat_repr5 = cat_fis5[cat_fis5["COBERTURA_CUSTO_RECEITA_PCT"] >= 10].sort_values(
+        "MARGEM_BRUTA_PCT", ascending=False)
+    cat_rows5 = [{
+        "categoria": str(r.NIVEL_1),
+        "receita_custo": fmt_milhao(float(r.RECEITA_COM_CUSTO)),
+        "cobertura": fmt_pct(float(r.COBERTURA_CUSTO_RECEITA_PCT)),
+        "margem": fmt_pct(float(r.MARGEM_BRUTA_PCT)),
+        "markup": fmt_markup(r.MARKUP_PONDERADO),
+        "skus_custo": f"{int(r.SKUS_COM_CUSTO)}/{int(r.SKUS)}",
+    } for r in cat_repr5.itertuples()]
+
+    sku_a5 = e5_sku[(e5_sku["UNIVERSO"] == "REDE_FISICA_SEM_LOJA93") & (e5_sku["CURVA_ABC_RECEITA"] == "A")]
+
+    def sku_row5(r, tipo):
+        return {
+            "tipo": tipo,
+            "codigo": str(int(r.CODIGO)),
+            "desc": str(r.DESCRICAO).strip(),
+            "nivel1": str(r.NIVEL_1),
+            "receita": fmt_compact(float(r.RECEITA)),
+            "preco": fmt_reais(float(r.PRECO_PRATICADO_ARM)),
+            "custo": fmt_reais(float(r.CUSTO_MEDIO_ARM)),
+            "margem": fmt_pct(float(r.MARGEM_BRUTA_PCT)),
+            "markup": fmt_markup(r.MARKUP),
+        }
+
+    top_sku5 = sku_a5.sort_values("MARGEM_BRUTA_PCT", ascending=False).head(5)
+    bot_sku5 = sku_a5.sort_values("MARGEM_BRUTA_PCT").head(5)
+    sku_rows5 = ([sku_row5(r, "Melhor") for r in top_sku5.itertuples()]
+                 + [sku_row5(r, "Pior") for r in bot_sku5.itertuples()])
+
+    cand_rows5 = [{
+        "rank": str(int(r.RANK_PRIORIDADE)),
+        "faixa": str(r.FAIXA_PRIORIDADE),
+        "motivos": str(r.MOTIVOS),
+        "loja": f"{int(r.COD_EMPRESA)} ({r.CD_CIDADE}-{r.CD_ESTADO})",
+        "codigo": str(int(r.CODIGO)),
+        "desc": str(r.DESCRICAO).strip(),
+        "receita": fmt_reais(float(r.RECEITA), 0),
+        "margem": "—" if pd.isna(r.MARGEM_BRUTA_PCT) else fmt_pct(float(r.MARGEM_BRUTA_PCT)),
+        "desconto": "—" if pd.isna(r.DESCONTO_EFETIVO_PCT) else fmt_pct(float(r.DESCONTO_EFETIVO_PCT)),
+    } for r in cand_fis5.head(15).itertuples()]
+
+    audit_rows5 = [{
+        "problema": str(r.PROBLEMA),
+        "antes": str(r.ANTES),
+        "depois": str(r.DEPOIS),
+    } for r in e5_audit.itertuples()]
+
+    etapa5 = {
+        "kpis": {
+            "margem_fisica": f"{fmt_pct(float(tf5.MARGEM_BRUTA_PCT))} · {fmt_markup(tf5.MARKUP_PONDERADO)}",
+            "cobertura_custo": fmt_pct(float(tc5.COBERTURA_CUSTO_RECEITA_PCT)),
+            "skus_custo": f"{int(tc5.SKUS_COM_CUSTO)} / {int(tc5.SKUS)}",
+            "desconto_medio": fmt_pct(desc_medio5),
+            "candidatos": f"{cand_alta5} ALTA / {fmt_int(len(cand_fis5))}",
+            "validacoes": f"{int((e5_valid['STATUS'] == 'OK').sum())}/{len(e5_valid)} OK",
+        },
+        "categorias": cat_rows5,
+        "skus": sku_rows5,
+        "candidatos": cand_rows5,
+        "autoaudit": audit_rows5,
+    }
+
 DATA = {
     "kpis": kpis,
     "status_antes": status_antes,
@@ -1179,6 +1527,7 @@ DATA = {
     "bugs": bugs,
     "etapa3": etapa3,
     "etapa4": etapa4,
+    "etapa5": etapa5,
     "gerado_em": datetime.now().strftime("%d/%m/%Y %H:%M"),
 }
 
