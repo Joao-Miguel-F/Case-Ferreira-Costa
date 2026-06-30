@@ -22,12 +22,13 @@ import numpy as np
 import sys
 from pathlib import Path
 
-# Ajusta path para importar src/utils
-sys.path.append(str(Path("..") / "src"))
+# Raiz do repositório resolvida a partir do arquivo (roda de qualquer diretório)
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
 
-RAW       = Path("..") / "data" / "raw"
-PROCESSED = Path("..") / "data" / "processed"
-OUT       = Path("..") / "outputs" / "etapa1"
+RAW       = ROOT / "data" / "raw"
+PROCESSED = ROOT / "data" / "processed"
+OUT       = ROOT / "outputs" / "etapa1"
 PROCESSED.mkdir(parents=True, exist_ok=True)
 OUT.mkdir(parents=True, exist_ok=True)
 
