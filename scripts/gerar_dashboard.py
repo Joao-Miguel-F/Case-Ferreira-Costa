@@ -7,6 +7,8 @@ Gera outputs/relatorio_qualidade_dados.html — dashboard executivo autocontido
 Os números vêm de:
   - outputs/etapa1/decisoes_tratamento.csv, dicionario_dados.csv
   - outputs/etapa2/cobertura_estoque.csv, investigacao_outliers_preco.csv
+  - outputs/etapa3/*.csv (rankings, ABC, desempenho, notas e recomendações)
+  - outputs/etapa4/*.csv (cobertura por categoria/loja, priorização e validações)
   - data/processed/*.parquet (KPIs, distribuição de status antes/depois, YoY)
 
 A distribuição de status "antes" é RECONSTRUÍDA pela lógica pré-correção (skeleton
@@ -30,6 +32,8 @@ from utils import (PROCESSED, OUTPUTS, LOJA_ATACADO, load_vendas, load_compras,
 
 E1 = OUTPUTS / "etapa1"
 E2 = OUTPUTS / "etapa2"
+E3 = OUTPUTS / "etapa3"
+E4 = OUTPUTS / "etapa4"
 STATUS_ORDER = ["EM RUPTURA", "CRÍTICO", "ATENÇÃO", "SAUDÁVEL", "SEM VENDA"]
 
 # ── formatação pt-BR ────────────────────────────────────────────────────────
@@ -198,9 +202,11 @@ _TEMPLATE = r"""<!DOCTYPE html>
   <button class="nav-item active" data-tab="t1"><span class="nav-num">1</span> Visão geral</button>
   <button class="nav-item" data-tab="t2"><span class="nav-num">2</span> Decisões de tratamento</button>
   <button class="nav-item" data-tab="t3"><span class="nav-num">3</span> Estoque projetado</button>
-  <button class="nav-item" data-tab="t4"><span class="nav-num">4</span> Bugs corrigidos</button>
-  <button class="nav-item" data-tab="t5"><span class="nav-num">5</span> Inconsistências</button>
-  <button class="nav-item" data-tab="t6"><span class="nav-num">6</span> Dicionário de dados</button>
+  <button class="nav-item" data-tab="t4"><span class="nav-num">4</span> Desempenho vendas</button>
+  <button class="nav-item" data-tab="t5"><span class="nav-num">5</span> Cobertura cat./loja</button>
+  <button class="nav-item" data-tab="t6"><span class="nav-num">6</span> Bugs corrigidos</button>
+  <button class="nav-item" data-tab="t7"><span class="nav-num">7</span> Inconsistências</button>
+  <button class="nav-item" data-tab="t8"><span class="nav-num">8</span> Dicionário de dados</button>
 </nav>
 
 <main class="main">
@@ -208,7 +214,7 @@ _TEMPLATE = r"""<!DOCTYPE html>
   <section id="t1" class="panel active">
     <span class="section-tag">Visão geral</span>
     <h1>Relatório de qualidade de dados</h1>
-    <p class="lead">Consolidação das Etapas 1 e 2 do case, da revisão de qualidade e das 4 correções
+    <p class="lead">Consolidação das Etapas 1, 2, 3 e 4 do case, da revisão de qualidade e das 4 correções
        aplicadas. Todos os números são lidos das bases tratadas e dos CSVs de saída.</p>
     <div class="kpi-grid" id="kpiGrid"></div>
     <h2>Linha do tempo</h2>
@@ -262,6 +268,89 @@ _TEMPLATE = r"""<!DOCTYPE html>
 
   <!-- ABA 4 -->
   <section id="t4" class="panel">
+    <span class="section-tag">Etapa 3</span>
+    <h1>Análise de desempenho de vendas</h1>
+    <p class="lead">Rankings, curva ABC, categorias, lojas e sazonalidade gerados a partir de
+       <code>data/processed/vendas_tratadas.parquet</code>. A Loja 93 é exibida na rede completa e
+       segregada da rede física para evitar mistura entre atacado/B2B e varejo.</p>
+    <div class="kpi-grid" id="e3KpiGrid"></div>
+    <div class="method">
+      <b>Nota metodológica importante:</b> a base não possui identificador de cupom, pedido ou nota.
+      Por isso, <code>TRANSACOES</code> na Etapa 3 é a contagem de linhas de venda e o ticket médio é
+      uma proxy de receita média por linha. A recomendação de melhoria é incluir um identificador único
+      de transação e número do item no fato de vendas.
+    </div>
+
+    <h2>Top categorias por receita</h2>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>Universo</th><th>Categoria N1</th><th class="num">Receita</th>
+        <th class="num">Part.</th><th class="num">Variação 2025 vs 2024</th></tr></thead>
+      <tbody id="e3CatBody"></tbody>
+    </table></div></div>
+
+    <h2>Top lojas por receita</h2>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>Universo</th><th>Loja</th><th>Cidade/UF</th><th>Operação</th>
+        <th class="num">Receita</th><th class="num">Linhas venda</th><th class="num">Receita média/linha</th></tr></thead>
+      <tbody id="e3LojaBody"></tbody>
+    </table></div></div>
+
+    <h2>Recomendações de melhoria</h2>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>Prioridade</th><th>Tema</th><th>Problema</th><th>Recomendação</th><th>Impacto esperado</th></tr></thead>
+      <tbody id="e3RecBody"></tbody>
+    </table></div></div>
+  </section>
+
+  <!-- ABA 5 -->
+  <section id="t5" class="panel">
+    <span class="section-tag">Etapa 4</span>
+    <h1>Cobertura por categoria e loja</h1>
+    <p class="lead">Agregacao do snapshot de cobertura da Etapa 2 por categoria, loja e categoria x loja,
+       cruzada com os outputs auditaveis da Etapa 3. A priorizacao operacional separa rede fisica e Loja 93.</p>
+    <div class="kpi-grid" id="e4KpiGrid"></div>
+    <div class="method">
+      <b>Nota metodologica:</b> "receita em risco" e a receita historica <b>ja realizada</b> pelos pares
+      loja x produto com <code>STATUS_ESTOQUE</code> em <b>EM RUPTURA</b> ou <b>CRITICO</b> &mdash; serve para
+      <b>ordenar prioridade</b> de reposicao, nao e perda projetada. Medias e medianas de
+      <code>DIAS_COBERTURA</code> usam apenas valores finitos; cobertura infinita e contada em coluna propria.
+      <br><b>Como ler a taxa de ruptura:</b> o estoque projetado e reconstruido como
+      <code>estoque inicial + compras &minus; vendas</code> (nao e contagem fisica). Como a base nao tem foto de
+      estoque de abertura para a maioria dos pares e ~88% dos SKUs vendem sem compra registrada, ~91% dos pares
+      ficam com estoque &le; 0 e sao marcados como ruptura. A metrica e <b>conservadora por construcao</b>
+      (erra para sinalizar ruptura a mais) e mede <b>prioridade relativa</b>, nao disponibilidade fisica real.
+    </div>
+
+    <h2>Top categorias por receita em risco</h2>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>Universo</th><th>Categoria N1</th><th class="num">Receita em risco</th>
+        <th class="num">Pares em risco</th><th class="num">% pares</th><th class="num">Mediana dias</th></tr></thead>
+      <tbody id="e4CatBody"></tbody>
+    </table></div></div>
+
+    <h2>Top lojas por receita em risco</h2>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>Universo</th><th>Loja</th><th>Cidade/UF</th><th>Operacao</th>
+        <th class="num">Receita em risco</th><th class="num">% pares risco</th></tr></thead>
+      <tbody id="e4LojaBody"></tbody>
+    </table></div></div>
+
+    <h2>Prioridades categoria x loja</h2>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>Escopo</th><th>Rank</th><th>Prioridade</th><th>Loja</th><th>Categoria</th>
+        <th class="num">Receita em risco</th><th>Acao recomendada</th></tr></thead>
+      <tbody id="e4PrioBody"></tbody>
+    </table></div></div>
+
+    <h2>Recomendacoes de melhoria</h2>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>Prioridade</th><th>Tema</th><th>Limitacao/problema</th><th>Recomendacao</th></tr></thead>
+      <tbody id="e4RecBody"></tbody>
+    </table></div></div>
+  </section>
+
+  <!-- ABA 6 -->
+  <section id="t6" class="panel">
     <span class="section-tag">Revisão de qualidade</span>
     <h1>Bugs encontrados e corrigidos</h1>
     <p class="lead">Quatro problemas identificados na revisão, com como foram descobertos, a correção
@@ -269,8 +358,8 @@ _TEMPLATE = r"""<!DOCTYPE html>
     <div id="bugList"></div>
   </section>
 
-  <!-- ABA 5 -->
-  <section id="t5" class="panel">
+  <!-- ABA 7 -->
+  <section id="t7" class="panel">
     <span class="section-tag">Achados de negócio</span>
     <h1>Inconsistências nos dados</h1>
     <p class="lead">Achados relevantes que <b>não são bugs</b> de código, mas sinais de negócio a
@@ -278,12 +367,12 @@ _TEMPLATE = r"""<!DOCTYPE html>
     <div id="findingList"></div>
   </section>
 
-  <!-- ABA 6 -->
-  <section id="t6" class="panel">
+  <!-- ABA 8 -->
+  <section id="t8" class="panel">
     <span class="section-tag">Referência</span>
     <h1>Dicionário de dados</h1>
-    <p class="lead">Campos das bases, agrupados por tabela. Use a busca para filtrar por nome,
-       descrição ou tabela.</p>
+    <p class="lead">Campos das bases tratadas e dos principais outputs analíticos, agrupados por
+       tabela/arquivo. Use a busca para filtrar por nome, descrição ou tabela.</p>
     <div class="toolbar"><input class="search" id="dicSearch" placeholder="Buscar campo, tabela ou descrição…"></div>
     <div class="table-wrap"><div class="table-scroll"><table>
       <thead><tr><th>Campo</th><th>Descrição</th><th>Tipo</th><th>Tratamento</th></tr></thead>
@@ -312,14 +401,15 @@ document.querySelectorAll(".nav-item").forEach(btn=>{
 });
 
 /* ---- ABA 1: KPIs + stepper ---- */
-const kpiDefs=[["receita_total","Receita total (24M)"],["transacoes","Transações"],
+const kpiDefs=[["receita_total","Receita total (24M)"],["transacoes","Linhas de venda"],
   ["skus","SKUs ativos"],["lojas","Lojas"],["categorias","Categorias (N1)"],["periodo","Período"]];
 document.getElementById("kpiGrid").innerHTML = kpiDefs.map(([k,l])=>
   `<div class="kpi"><div class="v">${esc(DATA.kpis[k])}</div><div class="l">${l}</div></div>`).join("");
 const steps=[["1","Etapa 1","Entendimento e limpeza dos dados brutos"],
   ["2","Etapa 2","Estoque projetado e cobertura"],
-  ["3","Revisão","4 problemas de qualidade identificados"],
-  ["4","Correções","Bugs corrigidos e saídas regeneradas"]];
+  ["3","Etapa 3","Desempenho de vendas, ABC e sazonalidade"],
+  ["4","Etapa 4","Cobertura por categoria e loja"],
+  ["5","Revisão","Correções e limitações documentadas"]];
 document.getElementById("stepper").innerHTML = steps.map(([n,t,d])=>
   `<div class="step"><div class="dot">${n}</div><div class="st-t">${t}</div><div class="st-d">${d}</div></div>`).join("");
 
@@ -382,7 +472,7 @@ if(typeof Chart !== "undefined"){
     `<table><thead><tr><th>Status</th><th class="num">Antes</th><th class="num">Depois</th></tr></thead><tbody>${tbl}</tbody></table>`;
 }
 
-/* ---- ABA 4: bugs ---- */
+/* ---- ABA 5: bugs ---- */
 document.getElementById("bugList").innerHTML = DATA.bugs.map(b=>`
   <div class="bug ${b.sev==='Médio'?'medio':''}">
     <div class="bug-head"><div class="bug-num">${b.n}</div>
@@ -399,16 +489,16 @@ document.getElementById("bugList").innerHTML = DATA.bugs.map(b=>`
     <div class="impact"><b>Impacto:</b> ${esc(b.impacto)}</div>
   </div>`).join("");
 
-/* ---- ABA 5: findings ---- */
+/* ---- ABA 6: findings ---- */
 document.getElementById("findingList").innerHTML = DATA.inconsistencias.map(f=>`
   <div class="finding">
     <h3>${esc(f.titulo)}
-      <span class="badge ${f.status==='investigado'?'st-investigado':'st-pendente'}">${f.status}</span></h3>
+      <span class="badge ${f.status==='pendente'?'st-pendente':'st-investigado'}">${f.status}</span></h3>
     <div class="meta"><b>Achado:</b> ${esc(f.achado)}</div>
     <div class="meta"><b>Hipótese:</b> ${esc(f.hipotese)}</div>
   </div>`).join("");
 
-/* ---- ABA 6: dicionário ---- */
+/* ---- ABA 7: dicionário ---- */
 function renderDic(){
   const q=document.getElementById("dicSearch").value.toLowerCase();
   const rows=DATA.dicionario.filter(d=>!q || (d.campo+d.descricao+d.tabela+d.tipo).toLowerCase().includes(q));
@@ -426,10 +516,65 @@ function renderDic(){
 document.getElementById("dicSearch").addEventListener("input",renderDic);
 renderDic();
 
+/* ---- ABA 4: etapa 3 ---- */
+if(DATA.etapa3){
+  const e3Kpis=[
+    ["receita_completa","Receita rede completa"],
+    ["linhas_completa","Linhas de venda"],
+    ["loja93_receita_pct","Participação Loja 93"],
+    ["receita_fisica","Receita rede física"],
+    ["abc_a","Curva A"],
+    ["validacoes","Validações"]
+  ];
+  document.getElementById("e3KpiGrid").innerHTML = e3Kpis.map(([k,l])=>
+    `<div class="kpi"><div class="v">${esc(DATA.etapa3.kpis[k])}</div><div class="l">${l}</div></div>`).join("");
+  document.getElementById("e3CatBody").innerHTML = DATA.etapa3.categorias.map(r=>
+    `<tr><td>${esc(r.universo)}</td><td>${esc(r.categoria)}</td><td class="num">${esc(r.receita)}</td>`+
+    `<td class="num">${esc(r.participacao)}</td><td class="num">${esc(r.var_yoy)}</td></tr>`).join("");
+  document.getElementById("e3LojaBody").innerHTML = DATA.etapa3.lojas.map(r=>
+    `<tr><td>${esc(r.universo)}</td><td>${esc(r.loja)}</td><td>${esc(r.cidade)}</td>`+
+    `<td>${esc(r.operacao)}</td><td class="num">${esc(r.receita)}</td>`+
+    `<td class="num">${esc(r.linhas)}</td><td class="num">${esc(r.receita_media)}</td></tr>`).join("");
+  document.getElementById("e3RecBody").innerHTML = DATA.etapa3.recomendacoes.map(r=>
+    `<tr><td><span class="badge ${r.prioridade==='ALTA'?'sev-critico':'sev-medio'}">${esc(r.prioridade)}</span></td>`+
+    `<td><b>${esc(r.tema)}</b></td><td>${esc(r.problema)}</td>`+
+    `<td>${esc(r.recomendacao)}</td><td>${esc(r.impacto)}</td></tr>`).join("");
+}
+
+/* ---- ABA 5: etapa 4 ---- */
+if(DATA.etapa4){
+  const e4Kpis=[
+    ["pares_total","Pares loja x produto"],
+    ["pares_risco_pct","Pares em risco"],
+    ["receita_risco_total","Receita em risco"],
+    ["receita_risco_fisica","Risco rede fisica"],
+    ["top_categoria_fisica","Top categoria fisica"],
+    ["validacoes","Validacoes"]
+  ];
+  document.getElementById("e4KpiGrid").innerHTML = e4Kpis.map(([k,l])=>
+    `<div class="kpi"><div class="v">${esc(DATA.etapa4.kpis[k])}</div><div class="l">${l}</div></div>`).join("");
+  document.getElementById("e4CatBody").innerHTML = DATA.etapa4.categorias.map(r=>
+    `<tr><td>${esc(r.universo)}</td><td>${esc(r.categoria)}</td><td class="num">${esc(r.receita_risco)}</td>`+
+    `<td class="num">${esc(r.pares_risco)}</td><td class="num">${esc(r.pct_pares)}</td>`+
+    `<td class="num">${esc(r.mediana_dias)}</td></tr>`).join("");
+  document.getElementById("e4LojaBody").innerHTML = DATA.etapa4.lojas.map(r=>
+    `<tr><td>${esc(r.universo)}</td><td>${esc(r.loja)}</td><td>${esc(r.cidade)}</td>`+
+    `<td>${esc(r.operacao)}</td><td class="num">${esc(r.receita_risco)}</td>`+
+    `<td class="num">${esc(r.pct_pares)}</td></tr>`).join("");
+  document.getElementById("e4PrioBody").innerHTML = DATA.etapa4.prioridades.map(r=>
+    `<tr><td>${esc(r.escopo)}</td><td class="num">${esc(r.rank)}</td>`+
+    `<td><span class="badge ${r.faixa==='ALTA'?'sev-critico':(r.faixa==='MÉDIA'?'sev-medio':'b-baixo')}">${esc(r.faixa)}</span></td>`+
+    `<td>${esc(r.loja)}</td><td>${esc(r.categoria)}</td><td class="num">${esc(r.receita_risco)}</td>`+
+    `<td>${esc(r.acao)}</td></tr>`).join("");
+  document.getElementById("e4RecBody").innerHTML = DATA.etapa4.recomendacoes.map(r=>
+    `<tr><td><span class="badge ${r.prioridade==='ALTA'?'sev-critico':'sev-medio'}">${esc(r.prioridade)}</span></td>`+
+    `<td><b>${esc(r.tema)}</b></td><td>${esc(r.problema)}</td><td>${esc(r.recomendacao)}</td></tr>`).join("");
+}
+
 /* ---- footer ---- */
 document.getElementById("footer").innerHTML =
   `Relatório gerado em <b>${esc(DATA.gerado_em)}</b> · Fonte: bases tratadas em `+
-  `<code>data/processed/</code> e saídas em <code>outputs/etapa1</code> e <code>outputs/etapa2</code> · `+
+  `<code>data/processed/</code> e saídas em <code>outputs/etapa1</code>, <code>outputs/etapa2</code>, <code>outputs/etapa3</code> e <code>outputs/etapa4</code> · `+
   `Case Técnico — Análise de Desempenho de Produtos no Varejo.`;
 </script>
 </body>
@@ -517,16 +662,198 @@ top15_rows = [{
 # ---- Decisões de tratamento (Etapa 1) ----
 dec = pd.read_csv(E1 / "decisoes_tratamento.csv")
 decisoes = [{
-    "campo": str(r.campo), "problema": str(r.problema), "tratamento": str(r.tratamento),
-    "justificativa": str(r.justificativa), "impacto": str(r.impacto).strip().upper(),
+    "campo": str(r.campo),
+    "problema": str(r.problema).replace("transação de venda", "linha de venda").replace("transações de venda", "linhas de venda"),
+    "tratamento": str(r.tratamento).replace("transação de venda", "linha de venda").replace("transações de venda", "linhas de venda"),
+    "justificativa": str(r.justificativa).replace("transação de venda", "linha de venda").replace("transações de venda", "linhas de venda"),
+    "impacto": str(r.impacto).strip().upper(),
 } for r in dec.itertuples()]
 
-# ---- Dicionário de dados ----
+# ---- Dicionário de dados consolidado ----
+def tipo_coluna(series: pd.Series) -> str:
+    if pd.api.types.is_integer_dtype(series):
+        return "Integer"
+    if pd.api.types.is_float_dtype(series):
+        return "Float"
+    return "String"
+
+
+DESCRICOES_COLUNAS = {
+    "UNIVERSO": "Universo analítico: rede completa ou rede física sem Loja 93.",
+    "CODIGO": "Código do produto.",
+    "COD_EMPRESA": "Código da loja.",
+    "DESCRICAO": "Descrição comercial do produto.",
+    "NIVEL_1": "Categoria de produto nível 1.",
+    "NIVEL_2": "Categoria de produto nível 2.",
+    "NIVEL_3": "Categoria de produto nível 3.",
+    "CD_CIDADE": "Cidade da loja.",
+    "CD_ESTADO": "Estado da loja.",
+    "TIPO_OPERACAO": "Classificação operacional usada na análise: rede física ou Loja 93 atacado/B2B.",
+    "FLAG_LOJA93": "Flag 1/0 indicando se a loja é a Loja 93.",
+    "RECEITA": "Receita bruta calculada a partir de quantidade vendida e preço unitário médio.",
+    "RECEITA_TOTAL": "Receita histórica total do par loja×produto.",
+    "QTD_ARMAZENAGEM": "Quantidade vendida normalizada para unidade de armazenagem.",
+    "QUANTIDADE_VENDIDA": "Quantidade vendida na unidade comercial original.",
+    "TRANSACOES": "Contagem de linhas de venda; proxy, não cupom único.",
+    "SKUS_ATIVOS": "Quantidade de SKUs distintos com venda no agrupamento.",
+    "LOJAS_ATIVAS": "Quantidade de lojas distintas no agrupamento.",
+    "PRECO_MEDIO_ARMAZENAGEM": "Receita dividida por quantidade em unidade de armazenagem.",
+    "TICKET_MEDIO_TRANSACAO": "Receita média por linha de venda; proxy devido à ausência de id de cupom/pedido/nota.",
+    "PARTICIPACAO_RECEITA_PCT": "Participação percentual da receita dentro do universo analisado.",
+    "PARTICIPACAO_QTD_PCT": "Participação percentual da quantidade dentro do universo analisado.",
+    "RANK_RECEITA": "Ranking decrescente por receita.",
+    "RANK_RECEITA_MENOR": "Ranking crescente por receita, usado para identificar cauda de menor venda.",
+    "RECEITA_ACUM": "Receita acumulada no ranking.",
+    "RECEITA_ACUM_PCT": "Percentual acumulado da receita no ranking.",
+    "CURVA_ABC_RECEITA": "Classe ABC por receita acumulada: A até 80%, B até 95%, C restante.",
+    "RANK_QUANTIDADE": "Ranking decrescente por quantidade em unidade de armazenagem.",
+    "RANK_QUANTIDADE_MENOR": "Ranking crescente por quantidade, usado para identificar cauda de menor venda.",
+    "QTD_ACUM_ARMAZENAGEM": "Quantidade acumulada no ranking por volume.",
+    "QTD_ACUM_PCT": "Percentual acumulado da quantidade no ranking por volume.",
+    "ESTOQUE_PROJ": "Estoque projetado no snapshot final de dez/2025.",
+    "VENDA_MEDIA_MES": "Venda média mensal em unidade de armazenagem usada para cobertura.",
+    "DIAS_COBERTURA": "Dias estimados de cobertura de estoque.",
+    "STATUS_ESTOQUE": "Classificação de cobertura: ruptura, crítico, atenção, saudável ou sem venda.",
+    "PARES_LOJA_PRODUTO": "Quantidade de pares loja x produto no agrupamento.",
+    "SKUS_DISTINTOS": "Quantidade de produtos distintos no agrupamento de cobertura.",
+    "LOJAS_DISTINTAS": "Quantidade de lojas distintas no agrupamento de cobertura.",
+    "RECEITA_HISTORICA_TOTAL": "Receita histórica dos pares loja x produto do agrupamento.",
+    "RECEITA_RUPTURA_CRITICO": "Receita histórica dos pares em status EM RUPTURA ou CRÍTICO.",
+    "RECEITA_EM_RUPTURA": "Receita histórica dos pares em status EM RUPTURA.",
+    "RECEITA_CRITICO": "Receita histórica dos pares em status CRÍTICO.",
+    "PARES_RUPTURA_CRITICO": "Quantidade de pares com status EM RUPTURA ou CRÍTICO.",
+    "PARES_COM_RECEITA_HISTORICA": "Quantidade de pares com receita histórica maior que zero.",
+    "PARES_SEM_RECEITA_HISTORICA": "Quantidade de pares sem receita histórica no período.",
+    "PARES_DIAS_COBERTURA_FINITO": "Quantidade de pares com DIAS_COBERTURA finito.",
+    "PARES_DIAS_COBERTURA_INFINITO": "Quantidade de pares com DIAS_COBERTURA infinito.",
+    "DIAS_COBERTURA_MEDIA_FINITA": "Média de dias de cobertura calculada somente sobre valores finitos.",
+    "DIAS_COBERTURA_MEDIANA_FINITA": "Mediana de dias de cobertura calculada somente sobre valores finitos.",
+    "DIAS_COBERTURA_P25_FINITA": "Percentil 25 de dias de cobertura calculado somente sobre valores finitos.",
+    "DIAS_COBERTURA_P75_FINITA": "Percentil 75 de dias de cobertura calculado somente sobre valores finitos.",
+    "PCT_PARES_RUPTURA_CRITICO": "Percentual de pares em ruptura/crítico no agrupamento.",
+    "PART_RECEITA_RISCO_PCT": "Participação da receita em risco dentro da receita histórica do agrupamento.",
+    "PART_RECEITA_RISCO_UNIVERSO_PCT": "Participação da receita em risco do agrupamento na receita histórica do universo.",
+    "RANK_REPOSICAO": "Ranking de reposição dentro do universo, ordenado por receita histórica em risco.",
+    "ESCOPO_PRIORIZACAO": "Escopo operacional usado na priorização: rede física sem Loja 93 ou Loja 93 atacado/B2B.",
+    "RANK_PRIORIDADE_ESCOPO": "Ranking de prioridade dentro do escopo operacional.",
+    "FAIXA_PRIORIDADE": "Faixa derivada do ranking dentro do escopo: ALTA, MÉDIA ou MONITORAR.",
+    "ACAO_RECOMENDADA": "Ação operacional recomendada a partir da priorização de cobertura.",
+    "EVIDENCIA_PRIORIZACAO": "Resumo textual da evidência numérica usada para priorizar.",
+    "ANO_MES": "Período mensal no formato YYYY-MM.",
+    "ANO": "Ano da venda.",
+    "MES": "Mês da venda.",
+    "RECEITA_2024": "Receita agregada em 2024.",
+    "RECEITA_2025": "Receita agregada em 2025.",
+    "QTD_ARMAZENAGEM_2024": "Quantidade em unidade de armazenagem agregada em 2024.",
+    "QTD_ARMAZENAGEM_2025": "Quantidade em unidade de armazenagem agregada em 2025.",
+    "TRANSACOES_2024": "Linhas de venda agregadas em 2024.",
+    "TRANSACOES_2025": "Linhas de venda agregadas em 2025.",
+    "DELTA_RECEITA_2025_VS_2024": "Diferença absoluta de receita entre 2025 e 2024.",
+    "VAR_RECEITA_2025_VS_2024_PCT": "Variação percentual de receita entre 2025 e 2024.",
+    "DELTA_QTD_ARMAZENAGEM_2025_VS_2024": "Diferença absoluta de quantidade entre 2025 e 2024.",
+    "VAR_QTD_ARMAZENAGEM_2025_VS_2024_PCT": "Variação percentual de quantidade entre 2025 e 2024.",
+    "DELTA_TRANSACOES_2025_VS_2024": "Diferença absoluta de linhas de venda entre 2025 e 2024.",
+    "VAR_TRANSACOES_2025_VS_2024_PCT": "Variação percentual de linhas de venda entre 2025 e 2024.",
+    "SEGMENTO": "Segmento usado no resumo de impacto da Loja 93.",
+    "PARTICIPACAO_RECEITA_REDE_COMPLETA_PCT": "Participação do segmento na receita da rede completa.",
+    "PARTICIPACAO_QTD_REDE_COMPLETA_PCT": "Participação do segmento na quantidade da rede completa.",
+    "PARTICIPACAO_TRANSACOES_REDE_COMPLETA_PCT": "Participação do segmento nas linhas de venda da rede completa.",
+    "PRIORIDADE": "Prioridade da recomendação de melhoria.",
+    "TEMA": "Tema da nota metodológica ou recomendação.",
+    "PROBLEMA": "Problema ou limitação identificada.",
+    "RISCO_ANALITICO": "Risco analítico associado à limitação.",
+    "RECOMENDACAO": "Recomendação prática de melhoria.",
+    "IMPACTO_ESPERADO": "Impacto esperado ao implementar a recomendação.",
+}
+
+
+def descricao_coluna(col: str) -> str:
+    if col in DESCRICOES_COLUNAS:
+        return DESCRICOES_COLUNAS[col]
+    if col.endswith("_MOM_DELTA"):
+        return "Variação absoluta mês contra mês anterior."
+    if col.endswith("_MOM_VAR_PCT"):
+        return "Variação percentual mês contra mês anterior."
+    if col.endswith("_YOY_DELTA"):
+        return "Variação absoluta contra o mesmo mês do ano anterior."
+    if col.endswith("_YOY_VAR_PCT"):
+        return "Variação percentual contra o mesmo mês do ano anterior."
+    if col.endswith("_ACUM_ANO"):
+        return "Valor acumulado dentro do ano."
+    if col.startswith("CONTRIBUICAO_"):
+        return "Contribuição percentual para a variação ou queda de receita."
+    return "Campo do artefato analítico; ver notebook/script da etapa correspondente."
+
+
+def tratamento_coluna(col: str) -> str:
+    if col == "TRANSACOES" or col.startswith("TRANSACOES_"):
+        return "Derivado como contagem de linhas de venda; proxy por ausência de id de cupom/pedido/nota."
+    if col in {"RECEITA", "QTD_ARMAZENAGEM"}:
+        return "Derivado na Etapa 1 e reaproveitado nas agregações."
+    if col.startswith("PARTICIPACAO_") or col.startswith("VAR_") or col.startswith("DELTA_"):
+        return "Calculado por agregação na etapa analítica."
+    if col.startswith("RANK_") or col.endswith("_ACUM") or col.endswith("_ACUM_PCT"):
+        return "Calculado a partir da ordenação do ranking."
+    return "Gerado ou preservado pelo pipeline analítico."
+
+
+def dicionario_arquivo_csv(path: Path, tabela: str) -> list[dict]:
+    df_head = pd.read_csv(path, nrows=50, encoding="utf-8-sig")
+    linhas = []
+    for col in df_head.columns:
+        linhas.append({
+            "tabela": tabela,
+            "campo": col,
+            "descricao": descricao_coluna(col),
+            "tipo": tipo_coluna(df_head[col]),
+            "notas": f"Arquivo: {path.relative_to(ROOT)}",
+            "tratamento": tratamento_coluna(col),
+        })
+    return linhas
+
+
 dic = pd.read_csv(E1 / "dicionario_dados.csv")
 dicionario = [{
-    "tabela": str(r.tabela), "campo": str(r.campo), "descricao": str(r.descricao),
+    "tabela": str(r.tabela), "campo": str(r.campo),
+    "descricao": str(r.descricao)
+        .replace("Data da transação de venda", "Data da linha de venda")
+        .replace("transação de venda", "linha de venda"),
     "tipo": str(r.tipo), "notas": str(r.notas), "tratamento": str(r.tratamento_aplicado),
 } for r in dic.itertuples()]
+
+artefatos_dicionario = [
+    (E2 / "cobertura_estoque.csv", "output_etapa2.cobertura_estoque"),
+    (E2 / "investigacao_outliers_preco.csv", "output_etapa2.investigacao_outliers_preco"),
+    (E3 / "ranking_produtos_receita.csv", "output_etapa3.ranking_produtos_receita"),
+    (E3 / "ranking_produtos_quantidade.csv", "output_etapa3.ranking_produtos_quantidade"),
+    (E3 / "curva_abc_produtos.csv", "output_etapa3.curva_abc_produtos"),
+    (E3 / "desempenho_categorias_n1.csv", "output_etapa3.desempenho_categorias_n1"),
+    (E3 / "desempenho_categorias_n2.csv", "output_etapa3.desempenho_categorias_n2"),
+    (E3 / "desempenho_categorias_n3.csv", "output_etapa3.desempenho_categorias_n3"),
+    (E3 / "desempenho_lojas.csv", "output_etapa3.desempenho_lojas"),
+    (E3 / "desempenho_regioes.csv", "output_etapa3.desempenho_regioes"),
+    (E3 / "vendas_mensais.csv", "output_etapa3.vendas_mensais"),
+    (E3 / "sazonalidade_picos_quedas.csv", "output_etapa3.sazonalidade_picos_quedas"),
+    (E3 / "decomposicao_queda_2025_categorias.csv", "output_etapa3.decomposicao_queda_2025_categorias"),
+    (E3 / "decomposicao_queda_2025_lojas.csv", "output_etapa3.decomposicao_queda_2025_lojas"),
+    (E3 / "impacto_loja93.csv", "output_etapa3.impacto_loja93"),
+    (E3 / "notas_metodologicas.csv", "output_etapa3.notas_metodologicas"),
+    (E3 / "recomendacoes_melhoria.csv", "output_etapa3.recomendacoes_melhoria"),
+    (E3 / "validacoes_etapa3.csv", "output_etapa3.validacoes_etapa3"),
+    (E4 / "cobertura_categorias_n1.csv", "output_etapa4.cobertura_categorias_n1"),
+    (E4 / "cobertura_categorias_n2.csv", "output_etapa4.cobertura_categorias_n2"),
+    (E4 / "cobertura_categorias_n3.csv", "output_etapa4.cobertura_categorias_n3"),
+    (E4 / "cobertura_lojas.csv", "output_etapa4.cobertura_lojas"),
+    (E4 / "cobertura_categoria_loja.csv", "output_etapa4.cobertura_categoria_loja"),
+    (E4 / "priorizacao_reposicao_categoria_loja.csv", "output_etapa4.priorizacao_reposicao_categoria_loja"),
+    (E4 / "recomendacoes_melhoria.csv", "output_etapa4.recomendacoes_melhoria"),
+    (E4 / "validacoes_etapa4.csv", "output_etapa4.validacoes_etapa4"),
+]
+for path, tabela in artefatos_dicionario:
+    if path.exists():
+        dicionario.extend(dicionario_arquivo_csv(path, tabela))
+
+pd.DataFrame(dicionario).to_csv(OUTPUTS / "dicionario_dados_projeto.csv", index=False, encoding="utf-8-sig")
 
 # ---- Investigação de outliers de preço (Bug 4) ----
 inv = pd.read_csv(E2 / "investigacao_outliers_preco.csv", encoding="utf-8-sig")
@@ -573,9 +900,17 @@ tk93 = r93/int((v["COD_EMPRESA"]==LOJA_ATACADO).sum())
 tknet = float(v[v["COD_EMPRESA"]!=LOJA_ATACADO]["RECEITA"].sum())/int((v["COD_EMPRESA"]!=LOJA_ATACADO).sum())
 
 inconsistencias = [
+    {"titulo": "Ausência de identificador real de transação",
+     "achado": "A base de vendas não possui id de cupom, pedido ou nota; a granularidade disponível "
+               "é a linha do fato de vendas. Por isso, as análises da Etapa 3 tratam TRANSACOES como "
+               "linhas de venda, não como cupons únicos.",
+     "hipotese": "É uma limitação de modelagem/captura, não um erro de cálculo. A melhoria recomendada "
+                 "é incluir id_transacao, número do item da transação e canal/origem para calcular "
+                 "ticket médio real, itens por cupom e análises de cesta.",
+     "status": "documentado"},
     {"titulo": "Queda sustentada de volume em 2025",
-     "achado": f"As transações caem de forma contínua ao longo de 2025; o ano fecha com "
-               f"{fmt_int(tx25)} transações contra {fmt_int(tx24)} em 2024 (−{fmt_pct(abs(tx25/tx24-1)*100)}) "
+     "achado": f"As linhas de venda caem de forma contínua ao longo de 2025; o ano fecha com "
+               f"{fmt_int(tx25)} linhas contra {fmt_int(tx24)} em 2024 (−{fmt_pct(abs(tx25/tx24-1)*100)}) "
                f"e receita de {fmt_milhao(r25)} vs {fmt_milhao(r24)} ({fmt_pct(yoy)}).",
      "hipotese": "Os 24 meses estão completos (não é gap de dados) — a queda é uma tendência real. "
                  "Possíveis causas: retração de mercado regional, descontinuação de operações ou "
@@ -604,7 +939,7 @@ inconsistencias = [
      "status": "investigado"},
     {"titulo": "Loja 93 (Alhandra) é um outlier de canal",
      "achado": f"Concentra {fmt_pct(r93/receita_total*100)} da receita ({fmt_milhao(r93)}) com apenas "
-               f"{fmt_int(sk93)} SKUs ({fmt_pct(sk93/v['CODIGO'].nunique()*100)}); ticket médio "
+               f"{fmt_int(sk93)} SKUs ({fmt_pct(sk93/v['CODIGO'].nunique()*100)}); receita média por linha "
                f"{fmt_reais(tk93,0)} vs {fmt_reais(tknet,0)} da rede física (~20×).",
      "hipotese": "Comportamento típico de atacado/B2B. Mantida na base, mas segregada via FLAG_LOJA93 "
                  "para não distorcer as médias da rede física.",
@@ -664,6 +999,173 @@ bugs = [
                 "EMBALAGEM=1 com CONVERSAO=1 (o padrão que seria erro de cadastro)."},
 ]
 
+# ---- Etapa 3: desempenho de vendas ----
+print("Carregando saídas da Etapa 3...")
+rank_receita = pd.read_csv(E3 / "ranking_produtos_receita.csv", encoding="utf-8-sig")
+cat_n1 = pd.read_csv(E3 / "desempenho_categorias_n1.csv", encoding="utf-8-sig")
+lojas_e3 = pd.read_csv(E3 / "desempenho_lojas.csv", encoding="utf-8-sig")
+impacto_e3 = pd.read_csv(E3 / "impacto_loja93.csv", encoding="utf-8-sig")
+valid_e3 = pd.read_csv(E3 / "validacoes_etapa3.csv", encoding="utf-8-sig")
+recs_e3 = pd.read_csv(E3 / "recomendacoes_melhoria.csv", encoding="utf-8-sig")
+
+impacto_idx = impacto_e3.set_index("SEGMENTO")
+rank_full = rank_receita[rank_receita["UNIVERSO"] == "REDE_COMPLETA"]
+abc_a = rank_full[rank_full["CURVA_ABC_RECEITA"] == "A"]
+abc_txt = f"{fmt_int(len(abc_a))} SKUs / {fmt_pct(abc_a['RECEITA'].sum() / rank_full['RECEITA'].sum() * 100)}"
+
+cat_rows = []
+for universo in ["REDE_COMPLETA", "REDE_FISICA_SEM_LOJA93"]:
+    top_cat = cat_n1[cat_n1["UNIVERSO"] == universo].sort_values("RECEITA", ascending=False).head(5)
+    for r in top_cat.itertuples():
+        cat_rows.append({
+            "universo": universo,
+            "categoria": str(r.NIVEL_1),
+            "receita": fmt_milhao(float(r.RECEITA)),
+            "participacao": fmt_pct(float(r.PARTICIPACAO_RECEITA_PCT)),
+            "var_yoy": fmt_pct(float(r.VAR_RECEITA_2025_VS_2024_PCT)),
+        })
+
+loja_rows = []
+for universo in ["REDE_COMPLETA", "REDE_FISICA_SEM_LOJA93"]:
+    top_lojas = lojas_e3[lojas_e3["UNIVERSO"] == universo].sort_values("RECEITA", ascending=False).head(6)
+    for r in top_lojas.itertuples():
+        loja_rows.append({
+            "universo": universo,
+            "loja": str(int(r.COD_EMPRESA)),
+            "cidade": f"{r.CD_CIDADE}-{r.CD_ESTADO}",
+            "operacao": str(r.TIPO_OPERACAO),
+            "receita": fmt_milhao(float(r.RECEITA)),
+            "linhas": fmt_int(float(r.TRANSACOES)),
+            "receita_media": fmt_reais(float(r.TICKET_MEDIO_TRANSACAO)),
+        })
+
+rec_rows = [{
+    "prioridade": str(r.PRIORIDADE),
+    "tema": str(r.TEMA),
+    "problema": str(r.PROBLEMA),
+    "recomendacao": str(r.RECOMENDACAO),
+    "impacto": str(r.IMPACTO_ESPERADO),
+} for r in recs_e3.itertuples()]
+
+etapa3 = {
+    "kpis": {
+        "receita_completa": fmt_milhao(float(impacto_idx.loc["REDE_COMPLETA", "RECEITA"])),
+        "linhas_completa": fmt_int(float(impacto_idx.loc["REDE_COMPLETA", "TRANSACOES"])),
+        "loja93_receita_pct": fmt_pct(float(impacto_idx.loc["LOJA_93_ATACADO_B2B", "PARTICIPACAO_RECEITA_REDE_COMPLETA_PCT"])),
+        "receita_fisica": fmt_milhao(float(impacto_idx.loc["REDE_FISICA_SEM_LOJA93", "RECEITA"])),
+        "abc_a": abc_txt,
+        "validacoes": f"{int((valid_e3['STATUS'] == 'OK').sum())}/{len(valid_e3)} OK",
+    },
+    "categorias": cat_rows,
+    "lojas": loja_rows,
+    "recomendacoes": rec_rows,
+}
+
+# ---- Etapa 4: cobertura por categoria e loja ----
+print("Carregando saidas da Etapa 4...")
+etapa4 = None
+if (E4 / "cobertura_categorias_n1.csv").exists():
+    cat4 = pd.read_csv(E4 / "cobertura_categorias_n1.csv", encoding="utf-8-sig")
+    lojas4 = pd.read_csv(E4 / "cobertura_lojas.csv", encoding="utf-8-sig")
+    prio4 = pd.read_csv(E4 / "priorizacao_reposicao_categoria_loja.csv", encoding="utf-8-sig")
+    recs4 = pd.read_csv(E4 / "recomendacoes_melhoria.csv", encoding="utf-8-sig")
+    valid4 = pd.read_csv(E4 / "validacoes_etapa4.csv", encoding="utf-8-sig")
+
+    cat4_full = cat4[cat4["UNIVERSO"] == "REDE_COMPLETA"]
+    cat4_fisica = cat4[cat4["UNIVERSO"] == "REDE_FISICA_SEM_LOJA93"]
+    pares_total_e4 = float(cat4_full["PARES_LOJA_PRODUTO"].sum())
+    pares_risco_e4 = float(cat4_full["PARES_RUPTURA_CRITICO"].sum())
+    receita_risco_total_e4 = float(cat4_full["RECEITA_RUPTURA_CRITICO"].sum())
+    receita_risco_fisica_e4 = float(cat4_fisica["RECEITA_RUPTURA_CRITICO"].sum())
+    top_cat_fisica = cat4_fisica.sort_values("RECEITA_RUPTURA_CRITICO", ascending=False).iloc[0]
+
+    cat_rows4 = []
+    for universo in ["REDE_COMPLETA", "REDE_FISICA_SEM_LOJA93"]:
+        top_cat = (
+            cat4[cat4["UNIVERSO"] == universo]
+            .sort_values("RECEITA_RUPTURA_CRITICO", ascending=False)
+            .head(5)
+        )
+        for r in top_cat.itertuples():
+            cat_rows4.append(
+                {
+                    "universo": universo,
+                    "categoria": str(r.NIVEL_1),
+                    "receita_risco": fmt_milhao(float(r.RECEITA_RUPTURA_CRITICO)),
+                    "pares_risco": fmt_int(float(r.PARES_RUPTURA_CRITICO)),
+                    "pct_pares": fmt_pct(float(r.PCT_PARES_RUPTURA_CRITICO)),
+                    "mediana_dias": fmt_int(float(r.DIAS_COBERTURA_MEDIANA_FINITA)),
+                }
+            )
+
+    loja_rows4 = []
+    lojas_visao = pd.concat(
+        [
+            lojas4[lojas4["UNIVERSO"] == "REDE_FISICA_SEM_LOJA93"]
+            .sort_values("RECEITA_RUPTURA_CRITICO", ascending=False)
+            .head(6),
+            lojas4[(lojas4["UNIVERSO"] == "REDE_COMPLETA") & (lojas4["COD_EMPRESA"] == LOJA_ATACADO)],
+        ],
+        ignore_index=True,
+    )
+    for r in lojas_visao.itertuples():
+        loja_rows4.append(
+            {
+                "universo": str(r.UNIVERSO),
+                "loja": str(int(r.COD_EMPRESA)),
+                "cidade": f"{r.CD_CIDADE}-{r.CD_ESTADO}",
+                "operacao": str(r.TIPO_OPERACAO),
+                "receita_risco": fmt_milhao(float(r.RECEITA_RUPTURA_CRITICO)),
+                "pct_pares": fmt_pct(float(r.PCT_PARES_RUPTURA_CRITICO)),
+            }
+        )
+
+    prio_visao = pd.concat(
+        [
+            prio4[prio4["ESCOPO_PRIORIZACAO"] == "REDE_FISICA_SEM_LOJA93"].head(10),
+            prio4[prio4["ESCOPO_PRIORIZACAO"] == "LOJA_93_ATACADO_B2B"].head(4),
+        ],
+        ignore_index=True,
+    )
+    prio_rows4 = []
+    for r in prio_visao.itertuples():
+        prio_rows4.append(
+            {
+                "escopo": str(r.ESCOPO_PRIORIZACAO),
+                "rank": str(int(r.RANK_PRIORIDADE_ESCOPO)),
+                "faixa": str(r.FAIXA_PRIORIDADE),
+                "loja": f"{int(r.COD_EMPRESA)} ({r.CD_CIDADE}-{r.CD_ESTADO})",
+                "categoria": str(r.NIVEL_1),
+                "receita_risco": fmt_milhao(float(r.RECEITA_RUPTURA_CRITICO)),
+                "acao": str(r.ACAO_RECOMENDADA),
+            }
+        )
+
+    rec_rows4 = [
+        {
+            "prioridade": str(r.PRIORIDADE),
+            "tema": str(r.TEMA),
+            "problema": str(r.LIMITACAO_OU_PROBLEMA),
+            "recomendacao": str(r.RECOMENDACAO),
+        }
+        for r in recs4.itertuples()
+    ]
+
+    etapa4 = {
+        "kpis": {
+            "pares_total": fmt_int(pares_total_e4),
+            "pares_risco_pct": f"{fmt_int(pares_risco_e4)} / {fmt_pct(pares_risco_e4 / pares_total_e4 * 100)}",
+            "receita_risco_total": fmt_milhao(receita_risco_total_e4),
+            "receita_risco_fisica": fmt_milhao(receita_risco_fisica_e4),
+            "top_categoria_fisica": str(top_cat_fisica.NIVEL_1),
+            "validacoes": f"{int((valid4['STATUS'] == 'OK').sum())}/{len(valid4)} OK",
+        },
+        "categorias": cat_rows4,
+        "lojas": loja_rows4,
+        "prioridades": prio_rows4,
+        "recomendacoes": rec_rows4,
+    }
+
 DATA = {
     "kpis": kpis,
     "status_antes": status_antes,
@@ -675,6 +1177,8 @@ DATA = {
                  "rows": outliers_rows},
     "inconsistencias": inconsistencias,
     "bugs": bugs,
+    "etapa3": etapa3,
+    "etapa4": etapa4,
     "gerado_em": datetime.now().strftime("%d/%m/%Y %H:%M"),
 }
 
