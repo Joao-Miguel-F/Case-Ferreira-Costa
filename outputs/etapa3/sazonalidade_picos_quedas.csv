@@ -1,0 +1,73 @@
+﻿UNIVERSO,METRICA,TIPO_EVENTO,ANO_MES,ANO,MES,VALOR,DELTA,VAR_PCT,CRITERIO
+REDE_COMPLETA,RECEITA,PICO_MOM,2024-11,2024,11,47209722.925026,14848886.177526,45.885359,Top 3 maiores altas por delta absoluto em mês contra mês anterior
+REDE_COMPLETA,RECEITA,PICO_MOM,2024-10,2024,10,32360836.747500,8355023.822019,34.804170,Top 3 maiores altas por delta absoluto em mês contra mês anterior
+REDE_COMPLETA,RECEITA,PICO_MOM,2024-03,2024,3,26521580.987902,6084810.062841,29.773833,Top 3 maiores altas por delta absoluto em mês contra mês anterior
+REDE_COMPLETA,RECEITA,QUEDA_MOM,2024-12,2024,12,27634978.905802,-19574744.019224,-41.463374,Top 3 maiores quedas por delta absoluto em mês contra mês anterior
+REDE_COMPLETA,RECEITA,QUEDA_MOM,2025-01,2025,1,20916014.084014,-6718964.821788,-24.313262,Top 3 maiores quedas por delta absoluto em mês contra mês anterior
+REDE_COMPLETA,RECEITA,QUEDA_MOM,2024-02,2024,2,20436770.925061,-5939373.458340,-22.517974,Top 3 maiores quedas por delta absoluto em mês contra mês anterior
+REDE_COMPLETA,RECEITA,PICO_YOY,2025-02,2025,2,17731493.015553,-2705277.909508,-13.237306,Top 3 maiores altas por delta absoluto em mesmo mês do ano anterior
+REDE_COMPLETA,RECEITA,PICO_YOY,2025-01,2025,1,20916014.084014,-5460130.299386,-20.701018,Top 3 maiores altas por delta absoluto em mesmo mês do ano anterior
+REDE_COMPLETA,RECEITA,PICO_YOY,2025-03,2025,3,17169905.232769,-9351675.755133,-35.260627,Top 3 maiores altas por delta absoluto em mesmo mês do ano anterior
+REDE_COMPLETA,RECEITA,QUEDA_YOY,2025-11,2025,11,8677567.858919,-38532155.066107,-81.619109,Top 3 maiores quedas por delta absoluto em mesmo mês do ano anterior
+REDE_COMPLETA,RECEITA,QUEDA_YOY,2025-10,2025,10,8191149.503574,-24169687.243926,-74.688079,Top 3 maiores quedas por delta absoluto em mesmo mês do ano anterior
+REDE_COMPLETA,RECEITA,QUEDA_YOY,2025-12,2025,12,3899830.899821,-23735148.005981,-85.888063,Top 3 maiores quedas por delta absoluto em mesmo mês do ano anterior
+REDE_COMPLETA,QTD_ARMAZENAGEM,PICO_MOM,2024-10,2024,10,296140.050000,88762.550000,42.802401,Top 3 maiores altas por delta absoluto em mês contra mês anterior
+REDE_COMPLETA,QTD_ARMAZENAGEM,PICO_MOM,2024-11,2024,11,338043.810000,41903.760000,14.149981,Top 3 maiores altas por delta absoluto em mês contra mês anterior
+REDE_COMPLETA,QTD_ARMAZENAGEM,PICO_MOM,2025-05,2025,5,194437.440000,34403.030000,21.497270,Top 3 maiores altas por delta absoluto em mês contra mês anterior
+REDE_COMPLETA,QTD_ARMAZENAGEM,QUEDA_MOM,2024-12,2024,12,251891.820000,-86151.990000,-25.485451,Top 3 maiores quedas por delta absoluto em mês contra mês anterior
+REDE_COMPLETA,QTD_ARMAZENAGEM,QUEDA_MOM,2025-06,2025,6,126363.780000,-68073.660000,-35.010572,Top 3 maiores quedas por delta absoluto em mês contra mês anterior
+REDE_COMPLETA,QTD_ARMAZENAGEM,QUEDA_MOM,2025-01,2025,1,208191.720000,-43700.100000,-17.348757,Top 3 maiores quedas por delta absoluto em mês contra mês anterior
+REDE_COMPLETA,QTD_ARMAZENAGEM,PICO_YOY,2025-02,2025,2,191868.350000,-16826.850000,-8.062883,Top 3 maiores altas por delta absoluto em mesmo mês do ano anterior
+REDE_COMPLETA,QTD_ARMAZENAGEM,PICO_YOY,2025-01,2025,1,208191.720000,-30622.990000,-12.822908,Top 3 maiores altas por delta absoluto em mesmo mês do ano anterior
+REDE_COMPLETA,QTD_ARMAZENAGEM,PICO_YOY,2025-03,2025,3,160287.930000,-74133.150000,-31.623926,Top 3 maiores altas por delta absoluto em mesmo mês do ano anterior
+REDE_COMPLETA,QTD_ARMAZENAGEM,QUEDA_YOY,2025-11,2025,11,69737.960000,-268305.850000,-79.370141,Top 3 maiores quedas por delta absoluto em mesmo mês do ano anterior
+REDE_COMPLETA,QTD_ARMAZENAGEM,QUEDA_YOY,2025-10,2025,10,82195.470000,-213944.580000,-72.244392,Top 3 maiores quedas por delta absoluto em mesmo mês do ano anterior
+REDE_COMPLETA,QTD_ARMAZENAGEM,QUEDA_YOY,2025-12,2025,12,44997.600000,-206894.220000,-82.136141,Top 3 maiores quedas por delta absoluto em mesmo mês do ano anterior
+REDE_COMPLETA,TRANSACOES,PICO_MOM,2024-11,2024,11,71525.000000,8838.000000,14.098617,Top 3 maiores altas por delta absoluto em mês contra mês anterior
+REDE_COMPLETA,TRANSACOES,PICO_MOM,2024-03,2024,3,55029.000000,7313.000000,15.326096,Top 3 maiores altas por delta absoluto em mês contra mês anterior
+REDE_COMPLETA,TRANSACOES,PICO_MOM,2024-07,2024,7,67700.000000,6185.000000,10.054458,Top 3 maiores altas por delta absoluto em mês contra mês anterior
+REDE_COMPLETA,TRANSACOES,QUEDA_MOM,2025-01,2025,1,51851.000000,-12815.000000,-19.817215,Top 3 maiores quedas por delta absoluto em mês contra mês anterior
+REDE_COMPLETA,TRANSACOES,QUEDA_MOM,2025-02,2025,2,44032.000000,-7819.000000,-15.079748,Top 3 maiores quedas por delta absoluto em mês contra mês anterior
+REDE_COMPLETA,TRANSACOES,QUEDA_MOM,2025-06,2025,6,28656.000000,-7326.000000,-20.360180,Top 3 maiores quedas por delta absoluto em mês contra mês anterior
+REDE_COMPLETA,TRANSACOES,PICO_YOY,2025-01,2025,1,51851.000000,-1196.000000,-2.254604,Top 3 maiores altas por delta absoluto em mesmo mês do ano anterior
+REDE_COMPLETA,TRANSACOES,PICO_YOY,2025-02,2025,2,44032.000000,-3684.000000,-7.720681,Top 3 maiores altas por delta absoluto em mesmo mês do ano anterior
+REDE_COMPLETA,TRANSACOES,PICO_YOY,2025-03,2025,3,40545.000000,-14484.000000,-26.320667,Top 3 maiores altas por delta absoluto em mesmo mês do ano anterior
+REDE_COMPLETA,TRANSACOES,QUEDA_YOY,2025-11,2025,11,17322.000000,-54203.000000,-75.781894,Top 3 maiores quedas por delta absoluto em mesmo mês do ano anterior
+REDE_COMPLETA,TRANSACOES,QUEDA_YOY,2025-12,2025,12,12258.000000,-52408.000000,-81.044134,Top 3 maiores quedas por delta absoluto em mesmo mês do ano anterior
+REDE_COMPLETA,TRANSACOES,QUEDA_YOY,2025-10,2025,10,19457.000000,-43230.000000,-68.961667,Top 3 maiores quedas por delta absoluto em mesmo mês do ano anterior
+REDE_FISICA_SEM_LOJA93,RECEITA,PICO_MOM,2024-11,2024,11,26481623.446909,6098286.499648,29.917999,Top 3 maiores altas por delta absoluto em mês contra mês anterior
+REDE_FISICA_SEM_LOJA93,RECEITA,PICO_MOM,2024-10,2024,10,20383336.947261,4680286.237401,29.804949,Top 3 maiores altas por delta absoluto em mês contra mês anterior
+REDE_FISICA_SEM_LOJA93,RECEITA,PICO_MOM,2024-05,2024,5,18915657.465975,1981534.358849,11.701429,Top 3 maiores altas por delta absoluto em mês contra mês anterior
+REDE_FISICA_SEM_LOJA93,RECEITA,QUEDA_MOM,2024-12,2024,12,18447265.909202,-8034357.537707,-30.339369,Top 3 maiores quedas por delta absoluto em mês contra mês anterior
+REDE_FISICA_SEM_LOJA93,RECEITA,QUEDA_MOM,2025-06,2025,6,8324730.405948,-5019473.772908,-37.615385,Top 3 maiores quedas por delta absoluto em mês contra mês anterior
+REDE_FISICA_SEM_LOJA93,RECEITA,QUEDA_MOM,2025-01,2025,1,14267360.477757,-4179905.431445,-22.658672,Top 3 maiores quedas por delta absoluto em mês contra mês anterior
+REDE_FISICA_SEM_LOJA93,RECEITA,PICO_YOY,2025-02,2025,2,12540085.156379,-2295144.158466,-15.470904,Top 3 maiores altas por delta absoluto em mesmo mês do ano anterior
+REDE_FISICA_SEM_LOJA93,RECEITA,PICO_YOY,2025-01,2025,1,14267360.477757,-3258518.185839,-18.592610,Top 3 maiores altas por delta absoluto em mesmo mês do ano anterior
+REDE_FISICA_SEM_LOJA93,RECEITA,PICO_YOY,2025-03,2025,3,12119782.683487,-4241049.366540,-25.921966,Top 3 maiores altas por delta absoluto em mesmo mês do ano anterior
+REDE_FISICA_SEM_LOJA93,RECEITA,QUEDA_YOY,2025-11,2025,11,7014012.129881,-19467611.317027,-73.513663,Top 3 maiores quedas por delta absoluto em mesmo mês do ano anterior
+REDE_FISICA_SEM_LOJA93,RECEITA,QUEDA_YOY,2025-12,2025,12,3895631.319821,-14551634.589380,-78.882338,Top 3 maiores quedas por delta absoluto em mesmo mês do ano anterior
+REDE_FISICA_SEM_LOJA93,RECEITA,QUEDA_YOY,2025-10,2025,10,6420794.427103,-13962542.520158,-68.499788,Top 3 maiores quedas por delta absoluto em mesmo mês do ano anterior
+REDE_FISICA_SEM_LOJA93,QTD_ARMAZENAGEM,PICO_MOM,2024-10,2024,10,288776.050000,86604.550000,42.837170,Top 3 maiores altas por delta absoluto em mês contra mês anterior
+REDE_FISICA_SEM_LOJA93,QTD_ARMAZENAGEM,PICO_MOM,2024-11,2024,11,324457.810000,35681.760000,12.356205,Top 3 maiores altas por delta absoluto em mês contra mês anterior
+REDE_FISICA_SEM_LOJA93,QTD_ARMAZENAGEM,PICO_MOM,2025-05,2025,5,192808.440000,34789.030000,22.015669,Top 3 maiores altas por delta absoluto em mês contra mês anterior
+REDE_FISICA_SEM_LOJA93,QTD_ARMAZENAGEM,QUEDA_MOM,2024-12,2024,12,246359.820000,-78097.990000,-24.070307,Top 3 maiores quedas por delta absoluto em mês contra mês anterior
+REDE_FISICA_SEM_LOJA93,QTD_ARMAZENAGEM,QUEDA_MOM,2025-06,2025,6,125186.780000,-67621.660000,-35.071940,Top 3 maiores quedas por delta absoluto em mês contra mês anterior
+REDE_FISICA_SEM_LOJA93,QTD_ARMAZENAGEM,QUEDA_MOM,2024-09,2024,9,202171.500000,-43468.280000,-17.695945,Top 3 maiores quedas por delta absoluto em mês contra mês anterior
+REDE_FISICA_SEM_LOJA93,QTD_ARMAZENAGEM,PICO_YOY,2025-02,2025,2,189086.350000,-15962.850000,-7.784888,Top 3 maiores altas por delta absoluto em mesmo mês do ano anterior
+REDE_FISICA_SEM_LOJA93,QTD_ARMAZENAGEM,PICO_YOY,2025-01,2025,1,204399.720000,-28313.990000,-12.166877,Top 3 maiores altas por delta absoluto em mesmo mês do ano anterior
+REDE_FISICA_SEM_LOJA93,QTD_ARMAZENAGEM,PICO_YOY,2025-03,2025,3,157182.930000,-70251.150000,-30.888577,Top 3 maiores altas por delta absoluto em mesmo mês do ano anterior
+REDE_FISICA_SEM_LOJA93,QTD_ARMAZENAGEM,QUEDA_YOY,2025-11,2025,11,68706.960000,-255750.850000,-78.824070,Top 3 maiores quedas por delta absoluto em mesmo mês do ano anterior
+REDE_FISICA_SEM_LOJA93,QTD_ARMAZENAGEM,QUEDA_YOY,2025-10,2025,10,81249.470000,-207526.580000,-71.864194,Top 3 maiores quedas por delta absoluto em mesmo mês do ano anterior
+REDE_FISICA_SEM_LOJA93,QTD_ARMAZENAGEM,QUEDA_YOY,2025-12,2025,12,44993.600000,-201366.220000,-81.736632,Top 3 maiores quedas por delta absoluto em mesmo mês do ano anterior
+REDE_FISICA_SEM_LOJA93,TRANSACOES,PICO_MOM,2024-11,2024,11,69830.000000,8843.000000,14.499811,Top 3 maiores altas por delta absoluto em mês contra mês anterior
+REDE_FISICA_SEM_LOJA93,TRANSACOES,PICO_MOM,2024-03,2024,3,53393.000000,6852.000000,14.722503,Top 3 maiores altas por delta absoluto em mês contra mês anterior
+REDE_FISICA_SEM_LOJA93,TRANSACOES,PICO_MOM,2024-07,2024,7,65939.000000,6105.000000,10.203229,Top 3 maiores altas por delta absoluto em mês contra mês anterior
+REDE_FISICA_SEM_LOJA93,TRANSACOES,QUEDA_MOM,2025-01,2025,1,50770.000000,-12693.000000,-20.000630,Top 3 maiores quedas por delta absoluto em mês contra mês anterior
+REDE_FISICA_SEM_LOJA93,TRANSACOES,QUEDA_MOM,2025-02,2025,2,43073.000000,-7697.000000,-15.160528,Top 3 maiores quedas por delta absoluto em mês contra mês anterior
+REDE_FISICA_SEM_LOJA93,TRANSACOES,QUEDA_MOM,2025-06,2025,6,28238.000000,-7216.000000,-20.353134,Top 3 maiores quedas por delta absoluto em mês contra mês anterior
+REDE_FISICA_SEM_LOJA93,TRANSACOES,PICO_YOY,2025-01,2025,1,50770.000000,-982.000000,-1.897511,Top 3 maiores altas por delta absoluto em mesmo mês do ano anterior
+REDE_FISICA_SEM_LOJA93,TRANSACOES,PICO_YOY,2025-02,2025,2,43073.000000,-3468.000000,-7.451494,Top 3 maiores altas por delta absoluto em mesmo mês do ano anterior
+REDE_FISICA_SEM_LOJA93,TRANSACOES,PICO_YOY,2025-03,2025,3,39728.000000,-13665.000000,-25.593243,Top 3 maiores altas por delta absoluto em mesmo mês do ano anterior
+REDE_FISICA_SEM_LOJA93,TRANSACOES,QUEDA_YOY,2025-11,2025,11,17189.000000,-52641.000000,-75.384505,Top 3 maiores quedas por delta absoluto em mesmo mês do ano anterior
+REDE_FISICA_SEM_LOJA93,TRANSACOES,QUEDA_YOY,2025-12,2025,12,12254.000000,-51209.000000,-80.691111,Top 3 maiores quedas por delta absoluto em mesmo mês do ano anterior
+REDE_FISICA_SEM_LOJA93,TRANSACOES,QUEDA_YOY,2025-10,2025,10,19243.000000,-41744.000000,-68.447374,Top 3 maiores quedas por delta absoluto em mesmo mês do ano anterior
