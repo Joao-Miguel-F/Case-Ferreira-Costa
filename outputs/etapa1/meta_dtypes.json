@@ -1,0 +1,45 @@
+{
+  "vendas_enr": {
+    "DATA_VENDA": "datetime64[us]",
+    "COD_EMPRESA": "int64",
+    "CODIGO": "int64",
+    "DIGITO": "int64",
+    "EMBALAGEM": "int64",
+    "QUANTIDADE_VENDIDA": "float64",
+    "CONVERSAO_VENDA_PARA_ARMAZENAGEM": "float64",
+    "UNIDADE_DA_VENDA": "str",
+    "PRECO_UNIT_MEDIO": "float64",
+    "RECEITA": "float64",
+    "QTD_ARMAZENAGEM": "float64",
+    "ANO_MES": "str",
+    "ANO": "int32",
+    "MES": "int32",
+    "FLAG_LOJA93": "int64",
+    "DESCRICAO": "str",
+    "NIVEL_1": "str",
+    "NIVEL_2": "str",
+    "NIVEL_3": "str",
+    "UNIDADE_ESTOQUE": "str",
+    "CONVERSAO_COMPRA_ARMAZENAGEM": "float64",
+    "CD_VOLTAGEM": "float64",
+    "CD_CIDADE": "str",
+    "CD_ESTADO": "str"
+  },
+  "compras": {
+    "DATA_ENTRADA": "datetime64[us]",
+    "COD_EMPRESA": "int64",
+    "CODIGO": "int64",
+    "EMBALAGEM_FORNECEDOR": "str",
+    "QUANTIDADE_COMPRA": "float64",
+    "UNIDADE_ESTOQUE": "str",
+    "PRECO_UNIT_UNIDADE_COMPRA": "float64",
+    "VALOR_TOTAL_COMPRA": "float64",
+    "FLAG_SEM_PRECO": "int64",
+    "ANO_MES": "str"
+  },
+  "estoque": {
+    "COD_EMPRESA": "int64",
+    "CODIGO": "int64",
+    "ESTOQUE_INICIAL": "float64"
+  }
+}

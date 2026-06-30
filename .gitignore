@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.env
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data bruta (tamanho — referenciar via README)
+data/raw/fato_vendas_1.csv
+
+# IDEs
+.vscode/
+.idea/

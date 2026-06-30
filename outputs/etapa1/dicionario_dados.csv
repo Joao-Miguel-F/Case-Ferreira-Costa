@@ -1,0 +1,36 @@
+﻿tabela,campo,descricao,tipo,notas,tratamento_aplicado
+fato_vendas,CODIGO,Código do produto,Integer,Chave para dim_produto,Intacto
+fato_vendas,DIGITO,Dígito verificador do código do produto (0–9),Integer,Junta com CODIGO para unicidade,Intacto
+fato_vendas,COD_EMPRESA,Código da loja,Integer,Chave para dimensao_lojas,Intacto
+fato_vendas,DATA_VENDA,Data da transação de venda,Date,jan/2024 a dez/2025,Convertido para datetime
+fato_vendas,QUANTIDADE_VENDIDA,"Quantidade vendida na unidade de venda (UN, JG, M2, etc.)",Float,Sempre ≥ 0,Intacto
+fato_vendas,UNIDADE_DA_VENDA,"Unidade em que o produto foi vendido (UN=unidade, JG=jogo, M2=m², GL=galão…)",String,51 unidades possíveis — ver dim_unidades,Intacto
+fato_vendas,EMBALAGEM,"Tipo de embalagem da venda: 0=embalagem padrão (99,97%), 1=embalagem alternativa (pack/caixa)",Integer,0 ou 1,Intacto
+fato_vendas,CONVERSAO_VENDA_PARA_ARMAZENAGEM,Fator para converter QTD vendida em unidade de estoque. Ex: 12 = 1 caixa de 12 unidades,Float,"1 em 99,8% dos casos; máx=100",Intacto
+fato_vendas,PRECO_UNIT_MEDIO,Preço unitário médio praticado na venda (R$),Float,Na unidade de venda,Intacto
+fato_vendas,RECEITA,🆕 Campo derivado: QUANTIDADE_VENDIDA × PRECO_UNIT_MEDIO,Float,R$,Criado no tratamento
+fato_vendas,QTD_ARMAZENAGEM,🆕 Campo derivado: QUANTIDADE_VENDIDA × CONVERSAO_VENDA_PARA_ARMAZENAGEM,Float,Unidade de estoque,Criado no tratamento
+fato_vendas,ANO_MES,🆕 Período no formato YYYY-MM,String,Para agrupamentos mensais,Criado no tratamento
+fato_vendas,FLAG_LOJA93,"🆕 Flag: 1 se loja 93 (atacado), 0 se loja física",Integer,0 ou 1,Criado no tratamento
+fato_vendas,NIVEL_1,🔗 Categoria nível 1 do produto (join dim_produto),String,23 categorias,Enriquecido via join
+fato_vendas,CD_CIDADE / CD_ESTADO,🔗 Cidade e estado da loja (join dim_lojas),String,"PE, BA, SE, PB, RN",Enriquecido via join
+fato_compras,CODIGO,Código do produto comprado,Integer,329 SKUs únicos,Intacto
+fato_compras,COD_EMPRESA,Código da loja que recebeu a compra,Integer,Chave para dim_lojas,Intacto
+fato_compras,DATA_ENTRADA,Data de entrada da mercadoria no estoque,Date,jan/2024 a dez/2025,Convertido para datetime
+fato_compras,QUANTIDADE_COMPRA,Quantidade comprada na unidade de compra do fornecedor,Float,Sempre > 0,Intacto
+fato_compras,UNIDADE_COMPRA,Unidade da compra (pode diferir da unidade de venda),String,Ver CONVERSAO_COMPRA_ARMAZENAGEM em dim_produto,Intacto
+fato_compras,PRECO_UNIT_UNIDADE_COMPRA,Preço unitário pago ao fornecedor (R$),Float,"9,5% nulos — excluídos do CMV",Nulos mantidos; excluídos de cálculos financeiros
+fato_compras,VALOR_TOTAL_COMPRA,🆕 Campo derivado: QUANTIDADE_COMPRA × PRECO_UNIT (quando disponível),Float,R$,Criado no tratamento
+fato_compras,FLAG_SEM_PRECO,🆕 Flag: 1 se preço ausente nessa entrada,Integer,0 ou 1,Criado no tratamento
+dim_produto,CODIGO,Código único do produto,Integer,PK da dimensão,Intacto
+dim_produto,DIGITO,Dígito verificador (0–9). Com CODIGO forma identificador completo,Integer,Distribuição uniforme 0–9,Intacto
+dim_produto,DESCRICAO,Nome comercial do produto,String,2.731 descrições,Intacto
+dim_produto,NIVEL_1 / NIVEL_2 / NIVEL_3,"Hierarquia de categorias: N1=23 cats (A–X), N2=sub, N3=família",String,N1 sem nulos; usar para análise macro,Intacto
+dim_produto,UNIDADE_ESTOQUE,Unidade base de armazenagem (referência para cálculo de estoque),String,"Ex: UN, M2, KG",Intacto
+dim_produto,EMBALAGEM_FORNECEDOR,Formato de embalagem do fornecedor. Ex: CX-12-UN = caixa c/ 12 unidades,String,59 nulos; 440 produtos em caixa de 1,Nulos mantidos
+dim_produto,CONVERSAO_COMPRA_ARMAZENAGEM,Fator para converter unidade de compra em unidade de estoque,Float,Ex: 12 se compra caixa de 12,Convertido de string com vírgula para float
+dim_produto,CD_VOLTAGEM,"Código de voltagem do produto: 0=N/A, 1=110V, 2=220V, 3=bivolt, 4–6=outros",Float,48 nulos; 2078 produtos sem voltagem (N/A),Intacto
+dim_produto,EMBALAGEM_VENDA_0/1/2,Descrição das embalagens de venda disponíveis para o produto,String,Emb0=padrão; emb1 e emb2 = alternativas,Intacto
+dim_lojas,COD_EMPRESA,Código da loja (PK),Integer,"1–9, 92, 93",Intacto
+dim_lojas,CD_CIDADE,Cidade da loja,String,"Recife, Salvador, João Pessoa, Natal, Aracaju, etc.",Intacto
+dim_lojas,CD_ESTADO,UF da loja,String,"PE, BA, PB, RN, SE",Intacto
