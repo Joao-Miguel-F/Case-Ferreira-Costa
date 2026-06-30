@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relatório de Qualidade de Dados — Análise de Varejo</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#f6f7f9; --surface:#ffffff; --ink:#1f2933; --muted:#6b7280;
+    --line:#e5e7eb; --line-strong:#d1d5db;
+    --accent:#2563eb; --accent-soft:#eff4ff;
+    --green:#059669; --green-soft:#ecfdf5;
+    --amber:#d97706; --amber-soft:#fffbeb;
+    --red:#dc2626; --red-soft:#fef2f2;
+    --sidebar:248px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--ink);font-size:15px;line-height:1.55;}
+  a{color:var(--accent);text-decoration:none;}
+
+  /* sidebar */
+  .sidebar{position:fixed;top:0;left:0;width:var(--sidebar);height:100vh;background:var(--surface);
+           border-right:1px solid var(--line);padding:24px 16px;display:flex;flex-direction:column;gap:4px;z-index:20;}
+  .brand{font-weight:700;font-size:16px;margin:0 8px 4px;}
+  .brand small{display:block;font-weight:500;color:var(--muted);font-size:12px;margin-top:2px;}
+  .nav-sep{height:1px;background:var(--line);margin:14px 4px;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;
+            color:var(--muted);font-size:14px;font-weight:500;border:none;background:none;text-align:left;width:100%;}
+  .nav-item:hover{background:var(--bg);color:var(--ink);}
+  .nav-item.active{background:var(--accent-soft);color:var(--accent);font-weight:600;}
+  .nav-num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;
+           background:var(--bg);font-size:12px;font-weight:600;flex:none;}
+  .nav-item.active .nav-num{background:var(--accent);color:#fff;}
+
+  /* main */
+  .main{margin-left:var(--sidebar);padding:36px 44px 80px;max-width:1180px;}
+  .panel{display:none;animation:fade .25s ease;}
+  .panel.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+  h1{font-size:24px;margin:0 0 4px;}
+  h2{font-size:19px;margin:34px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line);}
+  .lead{color:var(--muted);margin:0 0 8px;max-width:760px;}
+  .section-tag{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+               color:var(--accent);background:var(--accent-soft);padding:3px 10px;border-radius:6px;margin-bottom:12px;}
+
+  /* cards */
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin:18px 0;}
+  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px;}
+  .kpi .v{font-size:26px;font-weight:700;letter-spacing:-.5px;}
+  .kpi .l{color:var(--muted);font-size:13px;margin-top:2px;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px 24px;margin:16px 0;}
+
+  /* stepper */
+  .stepper{display:flex;gap:0;margin:24px 0 8px;flex-wrap:wrap;}
+  .step{flex:1;min-width:150px;position:relative;padding:0 14px;}
+  .step .dot{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;display:flex;
+             align-items:center;justify-content:center;font-weight:700;font-size:14px;margin-bottom:10px;}
+  .step .st-t{font-weight:600;font-size:14px;}
+  .step .st-d{color:var(--muted);font-size:13px;}
+  .step:not(:last-child)::after{content:"";position:absolute;top:15px;left:43px;right:-15px;height:2px;background:var(--line-strong);}
+
+  /* tables */
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top;}
+  th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;
+     position:sticky;top:0;background:var(--surface);}
+  tbody tr:hover{background:var(--bg);}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .table-wrap{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+  .table-scroll{max-height:560px;overflow:auto;}
+
+  /* badges */
+  .badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;}
+  .b-estrutural{background:#ede9fe;color:#6d28d9;}
+  .b-alto{background:var(--red-soft);color:var(--red);}
+  .b-medio{background:var(--amber-soft);color:var(--amber);}
+  .b-baixo{background:var(--bg);color:var(--muted);}
+  .b-rup{background:var(--red-soft);color:var(--red);}
+  .b-crit{background:var(--amber-soft);color:var(--amber);}
+  .b-ok{background:var(--green-soft);color:var(--green);}
+  .sev-critico{background:var(--red-soft);color:var(--red);}
+  .sev-medio{background:var(--amber-soft);color:var(--amber);}
+  .st-pendente{background:var(--amber-soft);color:var(--amber);}
+  .st-investigado{background:var(--green-soft);color:var(--green);}
+
+  /* expandable */
+  .exp-row{cursor:pointer;}
+  .exp-row .chev{display:inline-block;transition:transform .2s;color:var(--muted);}
+  .exp-row.open .chev{transform:rotate(90deg);}
+  .exp-detail{display:none;background:var(--bg);}
+  .exp-detail.open{display:table-row;}
+  .exp-detail td{padding:14px 18px;}
+  .exp-detail dl{margin:0;display:grid;grid-template-columns:160px 1fr;gap:6px 18px;}
+  .exp-detail dt{font-weight:600;color:var(--muted);font-size:13px;}
+  .exp-detail dd{margin:0;}
+
+  /* bug cards */
+  .bug{border:1px solid var(--line);border-left:4px solid var(--red);border-radius:12px;background:var(--surface);
+       padding:20px 24px;margin:16px 0;}
+  .bug.medio{border-left-color:var(--amber);}
+  .bug-head{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
+  .bug-num{width:30px;height:30px;border-radius:8px;background:var(--ink);color:#fff;display:flex;
+           align-items:center;justify-content:center;font-weight:700;flex:none;}
+  .bug-title{font-size:17px;font-weight:700;margin:0;}
+  .bug-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 22px;margin-top:12px;}
+  .bug-grid .lbl{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
+  .ba{display:flex;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap;}
+  .ba .before{color:var(--muted);text-decoration:line-through;background:var(--red-soft);padding:6px 12px;border-radius:8px;font-size:14px;}
+  .ba .arrow{color:var(--muted);font-weight:700;}
+  .ba .after{color:var(--green);background:var(--green-soft);padding:6px 12px;border-radius:8px;font-weight:600;font-size:14px;}
+  .impact{margin-top:12px;background:var(--accent-soft);border-radius:8px;padding:10px 14px;font-size:14px;}
+
+  /* finding cards */
+  .finding{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:18px 22px;margin:14px 0;}
+  .finding h3{margin:0 0 8px;font-size:16px;display:flex;justify-content:space-between;align-items:center;gap:12px;}
+  .finding .meta{font-size:13px;color:var(--muted);margin:6px 0;}
+  .finding .meta b{color:var(--ink);}
+
+  /* search */
+  .toolbar{display:flex;gap:12px;align-items:center;margin:12px 0;flex-wrap:wrap;}
+  .search{flex:1;min-width:220px;padding:9px 14px;border:1px solid var(--line-strong);border-radius:9px;font-size:14px;}
+  .search:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+  .filter-btn{padding:7px 14px;border:1px solid var(--line-strong);background:var(--surface);border-radius:9px;
+              cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);}
+  .filter-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .group-title{font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--accent);
+               background:var(--accent-soft);padding:8px 12px;}
+  .chart-box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;margin:16px 0;height:380px;}
+  .method{background:var(--bg);border:1px dashed var(--line-strong);border-radius:10px;padding:14px 18px;font-size:14px;}
+  .method code{background:var(--surface);padding:2px 6px;border-radius:5px;border:1px solid var(--line);}
+  footer{margin-left:var(--sidebar);padding:20px 44px 40px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);}
+  .muted{color:var(--muted);} .nowrap{white-space:nowrap;}
+  @media(max-width:820px){
+    .sidebar{position:static;width:100%;height:auto;flex-direction:row;flex-wrap:wrap;border-right:none;border-bottom:1px solid var(--line);}
+    .main,footer{margin-left:0;padding:24px 18px;}
+    .nav-sep{display:none;} .bug-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="brand">Qualidade de Dados<small>Análise de Varejo · 24 meses</small></div>
+  <div class="nav-sep"></div>
+  <button class="nav-item active" data-tab="t1"><span class="nav-num">1</span> Visão geral</button>
+  <button class="nav-item" data-tab="t2"><span class="nav-num">2</span> Decisões de tratamento</button>
+  <button class="nav-item" data-tab="t3"><span class="nav-num">3</span> Estoque projetado</button>
+  <button class="nav-item" data-tab="t4"><span class="nav-num">4</span> Bugs corrigidos</button>
+  <button class="nav-item" data-tab="t5"><span class="nav-num">5</span> Inconsistências</button>
+  <button class="nav-item" data-tab="t6"><span class="nav-num">6</span> Dicionário de dados</button>
+</nav>
+
+<main class="main">
+  <!-- ABA 1 -->
+  <section id="t1" class="panel active">
+    <span class="section-tag">Visão geral</span>
+    <h1>Relatório de qualidade de dados</h1>
+    <p class="lead">Consolidação das Etapas 1 e 2 do case, da revisão de qualidade e das 4 correções
+       aplicadas. Todos os números são lidos das bases tratadas e dos CSVs de saída.</p>
+    <div class="kpi-grid" id="kpiGrid"></div>
+    <h2>Linha do tempo</h2>
+    <div class="stepper" id="stepper"></div>
+  </section>
+
+  <!-- ABA 2 -->
+  <section id="t2" class="panel">
+    <span class="section-tag">Etapa 1</span>
+    <h1>Decisões de tratamento</h1>
+    <p class="lead">As decisões de limpeza documentadas com justificativa analítica. Clique numa linha
+       para ver problema, tratamento, justificativa e impacto.</p>
+    <div class="toolbar">
+      <input class="search" id="decSearch" placeholder="Buscar por campo, problema, tratamento…">
+      <button class="filter-btn active" data-imp="TODOS">Todos</button>
+      <button class="filter-btn" data-imp="ESTRUTURAL">Estrutural</button>
+      <button class="filter-btn" data-imp="ALTO">Alto</button>
+      <button class="filter-btn" data-imp="MÉDIO">Médio</button>
+      <button class="filter-btn" data-imp="BAIXO">Baixo</button>
+    </div>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th style="width:30px"></th><th>Campo</th><th>Problema</th><th>Impacto</th></tr></thead>
+      <tbody id="decBody"></tbody>
+    </table></div></div>
+  </section>
+
+  <!-- ABA 3 -->
+  <section id="t3" class="panel">
+    <span class="section-tag">Etapa 2</span>
+    <h1>Estoque projetado e cobertura</h1>
+    <p class="lead">Distribuição dos pares loja×produto por status de estoque, antes e depois das
+       correções, e os itens críticos de maior receita.</p>
+    <div class="chart-box"><canvas id="statusChart"></canvas></div>
+    <div class="method">
+      <b>Metodologia:</b> <code>Estoque_t = Estoque_inicial + ΣEntradas − ΣSaídas</code>, com todas as
+      quantidades convertidas para a unidade de armazenagem. O snapshot é de dez/2025; a cobertura em
+      dias usa a venda média mensal da rede física. Pares com estoque ≤ 0 são classificados como
+      <b>Em Ruptura</b>.
+      <br><br><b>Limitações:</b> a ruptura de ~91% reflete a <b>ausência de registros de reposição</b>
+      na base (~88% dos SKUs vendem sem compra registrada) — é um indicador de priorização relativa,
+      não de disponibilidade física absoluta. A velocidade usa a média dos meses <i>com</i> venda
+      (não dos 24 meses), o que tende a subestimar os dias de cobertura de itens intermitentes.
+    </div>
+    <h2>Top 15 itens críticos por receita histórica (pós-correção)</h2>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>Loja</th><th>Cidade</th><th>Produto</th><th>Categoria</th>
+        <th class="num">Estoque</th><th class="num">Receita</th><th>Status</th></tr></thead>
+      <tbody id="topBody"></tbody>
+    </table></div></div>
+  </section>
+
+  <!-- ABA 4 -->
+  <section id="t4" class="panel">
+    <span class="section-tag">Revisão de qualidade</span>
+    <h1>Bugs encontrados e corrigidos</h1>
+    <p class="lead">Quatro problemas identificados na revisão, com como foram descobertos, a correção
+       e o impacto numérico mensurável.</p>
+    <div id="bugList"></div>
+  </section>
+
+  <!-- ABA 5 -->
+  <section id="t5" class="panel">
+    <span class="section-tag">Achados de negócio</span>
+    <h1>Inconsistências nos dados</h1>
+    <p class="lead">Achados relevantes que <b>não são bugs</b> de código, mas sinais de negócio a
+       acompanhar. Cada um traz o achado, a hipótese de causa e o status.</p>
+    <div id="findingList"></div>
+  </section>
+
+  <!-- ABA 6 -->
+  <section id="t6" class="panel">
+    <span class="section-tag">Referência</span>
+    <h1>Dicionário de dados</h1>
+    <p class="lead">Campos das bases, agrupados por tabela. Use a busca para filtrar por nome,
+       descrição ou tabela.</p>
+    <div class="toolbar"><input class="search" id="dicSearch" placeholder="Buscar campo, tabela ou descrição…"></div>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>Campo</th><th>Descrição</th><th>Tipo</th><th>Tratamento</th></tr></thead>
+      <tbody id="dicBody"></tbody>
+    </table></div></div>
+  </section>
+</main>
+
+<footer id="footer"></footer>
+
+<script>
+const DATA = {"kpis": {"receita_total": "R$ 482,5M", "transacoes": "1.090.390", "skus": "2.729", "lojas": "11", "categorias": "23", "periodo": "01/2024 a 12/2025"}, "status_antes": {"EM RUPTURA": 22812, "CRÍTICO": 571, "ATENÇÃO": 388, "SAUDÁVEL": 909, "SEM VENDA": 650}, "status_depois": {"EM RUPTURA": 26140, "CRÍTICO": 573, "ATENÇÃO": 391, "SAUDÁVEL": 955, "SEM VENDA": 662}, "top15": [{"loja": 93, "cidade": "ALHANDRA", "codigo": 467774, "desc": "COND.SPLIT 9000 COND.S3UQ09 INV. 143", "nivel1": "D - ELETROS", "estoque": "-5.433", "receita": "R$ 10,9M", "status": "EM RUPTURA"}, {"loja": 93, "cidade": "ALHANDRA", "codigo": 467770, "desc": "COND.SPLIT 9000 COND.S3UQ09 INV. 141", "nivel1": "D - ELETROS", "estoque": "-4.611", "receita": "R$ 8,6M", "status": "EM RUPTURA"}, {"loja": 93, "cidade": "ALHANDRA", "codigo": 470176, "desc": "LAV.ROUPA 13.0KG BWK13AB     BR M220", "nivel1": "D - ELETROS", "estoque": "-2.474", "receita": "R$ 7,1M", "status": "EM RUPTURA"}, {"loja": 93, "cidade": "ALHANDRA", "codigo": 454103, "desc": "REFRIG. 2P 386L FF CRM44ABB  BR M220", "nivel1": "D - ELETROS", "estoque": "-1.916", "receita": "R$ 6,0M", "status": "EM RUPTURA"}, {"loja": 93, "cidade": "ALHANDRA", "codigo": 467773, "desc": "COND.SPLIT 9000 EVAP.S3NQ09 INV. 143", "nivel1": "D - ELETROS", "estoque": "-5.433", "receita": "R$ 5,4M", "status": "EM RUPTURA"}, {"loja": 93, "cidade": "ALHANDRA", "codigo": 467769, "desc": "COND.SPLIT 9000 EVAP.S3NQ09 INV. 141", "nivel1": "D - ELETROS", "estoque": "-4.611", "receita": "R$ 4,5M", "status": "EM RUPTURA"}, {"loja": 93, "cidade": "ALHANDRA", "codigo": 467736, "desc": "COND.SPLIT 12000 COND+EVAP.  ACST12F", "nivel1": "D - ELETROS", "estoque": "-644", "receita": "R$ 3,9M", "status": "EM RUPTURA"}, {"loja": 93, "cidade": "ALHANDRA", "codigo": 481978, "desc": "COND.SPLIT COND 12000 HIQE12 INV.202", "nivel1": "D - ELETROS", "estoque": "-2.544", "receita": "R$ 3,8M", "status": "EM RUPTURA"}, {"loja": 93, "cidade": "ALHANDRA", "codigo": 466938, "desc": "TV LED 50 UHD SMT 4K     50UR8750PSA", "nivel1": "R - ELETRONICOS", "estoque": "-1.424", "receita": "R$ 3,6M", "status": "EM RUPTURA"}, {"loja": 3, "cidade": "SALVADOR", "codigo": 432048, "desc": "MASSA CORRIDA PVA CORAL PLS     25KG", "nivel1": "S - TINTAS E QUIMICOS", "estoque": "-35.862", "receita": "R$ 3,0M", "status": "EM RUPTURA"}, {"loja": 93, "cidade": "ALHANDRA", "codigo": 442061, "desc": "TV LED 43 FHD SMT        43LM6370PSB", "nivel1": "R - ELETRONICOS", "estoque": "-904", "receita": "R$ 2,8M", "status": "EM RUPTURA"}, {"loja": 93, "cidade": "ALHANDRA", "codigo": 452083, "desc": "LAV.ROUPA 12.0KG CWH12BBB    BR M220", "nivel1": "D - ELETROS", "estoque": "-697", "receita": "R$ 2,8M", "status": "EM RUPTURA"}, {"loja": 93, "cidade": "ALHANDRA", "codigo": 402016, "desc": "REFRIG. 2P 340L FF    BR  CRM39 M220", "nivel1": "D - ELETROS", "estoque": "-647", "receita": "R$ 2,6M", "status": "EM RUPTURA"}, {"loja": 93, "cidade": "ALHANDRA", "codigo": 481977, "desc": "COND.SPLIT EVAP 12000 HIQI12 INV.202", "nivel1": "D - ELETROS", "estoque": "-2.544", "receita": "R$ 2,6M", "status": "EM RUPTURA"}, {"loja": 93, "cidade": "ALHANDRA", "codigo": 466940, "desc": "TV LED 65 UHD SMT 4K     65UR8750PSA", "nivel1": "R - ELETRONICOS", "estoque": "-679", "receita": "R$ 2,5M", "status": "EM RUPTURA"}], "decisoes": [{"campo": "Todos os CSVs", "problema": "Encoding latin1 (não UTF-8)", "tratamento": "Leitura com encoding=\"latin1\"", "justificativa": "Arquivos gerados em sistema legado brasileiro com acentos em latin1. UTF-8 geraria caracteres corrompidos em nomes de produtos e cidades.", "impacto": "ESTRUTURAL"}, {"campo": "dimensao_precos: PRECO_EMBALAGEM_*", "problema": "Vírgula como separador decimal (padrão pt-BR)", "tratamento": "str.replace(\",\",\".\") + pd.to_numeric()", "justificativa": "Campos lidos como string. Conversão necessária para qualquer cálculo de receita ou margem.", "impacto": "ALTO"}, {"campo": "dim_produto: CONVERSAO_COMPRA_ARMAZENAGEM", "problema": "Mesmo problema de vírgula decimal", "tratamento": "str.replace(\",\",\".\") + pd.to_numeric()", "justificativa": "Fator de conversão errado distorceria volume de estoque calculado.", "impacto": "ALTO"}, {"campo": "fato_estoque_inicial: ESTOQUE_INICIAL", "problema": "1.329 registros nulos (5,2%)", "tratamento": "fillna(0)", "justificativa": "Ausência de registro indica produto não disponível naquela loja no início do período. Tratar como zero é conservador: subestima estoque inicial, o que gera alerta precoce de ruptura — direção segura para o negócio.", "impacto": "MÉDIO"}, {"campo": "fato_compras: PRECO_UNIT_UNIDADE_COMPRA", "problema": "132 registros sem preço (9,5% das entradas)", "tratamento": "Mantidos no volume físico; excluídos do cálculo de CMV e valor de compras", "justificativa": "Volume físico é válido para cálculo de estoque. Custo não pode ser imputado sem risco de distorção de margem.", "impacto": "MÉDIO"}, {"campo": "fato_vendas: RECEITA (nova)", "problema": "Receita não estava pré-calculada", "tratamento": "RECEITA = QUANTIDADE_VENDIDA × PRECO_UNIT_MEDIO", "justificativa": "Campo derivado necessário para todos os rankings e análises de desempenho.", "impacto": "ESTRUTURAL"}, {"campo": "fato_vendas: QTD_ARMAZENAGEM (nova)", "problema": "Quantidade em unidade de venda ≠ unidade de estoque", "tratamento": "QTD_ARMAZENAGEM = QUANTIDADE_VENDIDA × CONVERSAO_VENDA_PARA_ARMAZENAGEM", "justificativa": "Para calcular posição de estoque, precisamos da mesma unidade de medida do estoque inicial e compras. Sem conversão, packs/caixas seriam somados como unidades.", "impacto": "ALTO"}, {"campo": "Loja 93 (Alhandra - PB)", "problema": "Comportamento atípico: ticket R$6.160 vs média R$309 da rede; 32% da receita com 12% dos SKUs", "tratamento": "Análises segmentadas: com e sem loja 93. FLAG_LOJA93 criado em fato_vendas.", "justificativa": "Preço médio unitário 13× superior e mix concentrado em Eletros (76% da receita da loja) indicam operação de atacado/distribuição. Incluir nos médias da rede mascara o desempenho real das lojas físicas.", "impacto": "ALTO"}, {"campo": "dim_produto: CODIGOs 208976 e 232822", "problema": "2 produtos cadastrados sem nenhuma transação de venda nos 24 meses", "tratamento": "Mantidos na dimensão; excluídos das análises de desempenho; sinalizados como candidatos à descontinuação", "justificativa": "Presença no cadastro sem venda implica custo de gestão (espaço, inventário) sem retorno. Confirmação com área comercial antes de descontinuar.", "impacto": "BAIXO"}, {"campo": "fato_compras vs fato_vendas", "problema": "2.400 SKUs vendidos (79,8% da receita) sem compra registrada no período", "tratamento": "Estoque projetado usará apenas estoque_inicial como fonte de entrada para esses SKUs", "justificativa": "Provável que reposição ocorra via transferência entre lojas ou que o período de compras seja anterior ao corte da base. Não indica erro — indica que o estoque inicial é o principal ativo de cobertura.", "impacto": "ESTRUTURAL"}], "dicionario": [{"tabela": "fato_vendas", "campo": "CODIGO", "descricao": "Código do produto", "tipo": "Integer", "notas": "Chave para dim_produto", "tratamento": "Intacto"}, {"tabela": "fato_vendas", "campo": "DIGITO", "descricao": "Dígito verificador do código do produto (0–9)", "tipo": "Integer", "notas": "Junta com CODIGO para unicidade", "tratamento": "Intacto"}, {"tabela": "fato_vendas", "campo": "COD_EMPRESA", "descricao": "Código da loja", "tipo": "Integer", "notas": "Chave para dimensao_lojas", "tratamento": "Intacto"}, {"tabela": "fato_vendas", "campo": "DATA_VENDA", "descricao": "Data da transação de venda", "tipo": "Date", "notas": "jan/2024 a dez/2025", "tratamento": "Convertido para datetime"}, {"tabela": "fato_vendas", "campo": "QUANTIDADE_VENDIDA", "descricao": "Quantidade vendida na unidade de venda (UN, JG, M2, etc.)", "tipo": "Float", "notas": "Sempre ≥ 0", "tratamento": "Intacto"}, {"tabela": "fato_vendas", "campo": "UNIDADE_DA_VENDA", "descricao": "Unidade em que o produto foi vendido (UN=unidade, JG=jogo, M2=m², GL=galão…)", "tipo": "String", "notas": "51 unidades possíveis — ver dim_unidades", "tratamento": "Intacto"}, {"tabela": "fato_vendas", "campo": "EMBALAGEM", "descricao": "Tipo de embalagem da venda: 0=embalagem padrão (99,97%), 1=embalagem alternativa (pack/caixa)", "tipo": "Integer", "notas": "0 ou 1", "tratamento": "Intacto"}, {"tabela": "fato_vendas", "campo": "CONVERSAO_VENDA_PARA_ARMAZENAGEM", "descricao": "Fator para converter QTD vendida em unidade de estoque. Ex: 12 = 1 caixa de 12 unidades", "tipo": "Float", "notas": "1 em 99,8% dos casos; máx=100", "tratamento": "Intacto"}, {"tabela": "fato_vendas", "campo": "PRECO_UNIT_MEDIO", "descricao": "Preço unitário médio praticado na venda (R$)", "tipo": "Float", "notas": "Na unidade de venda", "tratamento": "Intacto"}, {"tabela": "fato_vendas", "campo": "RECEITA", "descricao": "🆕 Campo derivado: QUANTIDADE_VENDIDA × PRECO_UNIT_MEDIO", "tipo": "Float", "notas": "R$", "tratamento": "Criado no tratamento"}, {"tabela": "fato_vendas", "campo": "QTD_ARMAZENAGEM", "descricao": "🆕 Campo derivado: QUANTIDADE_VENDIDA × CONVERSAO_VENDA_PARA_ARMAZENAGEM", "tipo": "Float", "notas": "Unidade de estoque", "tratamento": "Criado no tratamento"}, {"tabela": "fato_vendas", "campo": "ANO_MES", "descricao": "🆕 Período no formato YYYY-MM", "tipo": "String", "notas": "Para agrupamentos mensais", "tratamento": "Criado no tratamento"}, {"tabela": "fato_vendas", "campo": "FLAG_LOJA93", "descricao": "🆕 Flag: 1 se loja 93 (atacado), 0 se loja física", "tipo": "Integer", "notas": "0 ou 1", "tratamento": "Criado no tratamento"}, {"tabela": "fato_vendas", "campo": "NIVEL_1", "descricao": "🔗 Categoria nível 1 do produto (join dim_produto)", "tipo": "String", "notas": "23 categorias", "tratamento": "Enriquecido via join"}, {"tabela": "fato_vendas", "campo": "CD_CIDADE / CD_ESTADO", "descricao": "🔗 Cidade e estado da loja (join dim_lojas)", "tipo": "String", "notas": "PE, BA, SE, PB, RN", "tratamento": "Enriquecido via join"}, {"tabela": "fato_compras", "campo": "CODIGO", "descricao": "Código do produto comprado", "tipo": "Integer", "notas": "329 SKUs únicos", "tratamento": "Intacto"}, {"tabela": "fato_compras", "campo": "COD_EMPRESA", "descricao": "Código da loja que recebeu a compra", "tipo": "Integer", "notas": "Chave para dim_lojas", "tratamento": "Intacto"}, {"tabela": "fato_compras", "campo": "DATA_ENTRADA", "descricao": "Data de entrada da mercadoria no estoque", "tipo": "Date", "notas": "jan/2024 a dez/2025", "tratamento": "Convertido para datetime"}, {"tabela": "fato_compras", "campo": "QUANTIDADE_COMPRA", "descricao": "Quantidade comprada na unidade de compra do fornecedor", "tipo": "Float", "notas": "Sempre > 0", "tratamento": "Intacto"}, {"tabela": "fato_compras", "campo": "UNIDADE_COMPRA", "descricao": "Unidade da compra (pode diferir da unidade de venda)", "tipo": "String", "notas": "Ver CONVERSAO_COMPRA_ARMAZENAGEM em dim_produto", "tratamento": "Intacto"}, {"tabela": "fato_compras", "campo": "PRECO_UNIT_UNIDADE_COMPRA", "descricao": "Preço unitário pago ao fornecedor (R$)", "tipo": "Float", "notas": "9,5% nulos — excluídos do CMV", "tratamento": "Nulos mantidos; excluídos de cálculos financeiros"}, {"tabela": "fato_compras", "campo": "VALOR_TOTAL_COMPRA", "descricao": "🆕 Campo derivado: QUANTIDADE_COMPRA × PRECO_UNIT (quando disponível)", "tipo": "Float", "notas": "R$", "tratamento": "Criado no tratamento"}, {"tabela": "fato_compras", "campo": "FLAG_SEM_PRECO", "descricao": "🆕 Flag: 1 se preço ausente nessa entrada", "tipo": "Integer", "notas": "0 ou 1", "tratamento": "Criado no tratamento"}, {"tabela": "dim_produto", "campo": "CODIGO", "descricao": "Código único do produto", "tipo": "Integer", "notas": "PK da dimensão", "tratamento": "Intacto"}, {"tabela": "dim_produto", "campo": "DIGITO", "descricao": "Dígito verificador (0–9). Com CODIGO forma identificador completo", "tipo": "Integer", "notas": "Distribuição uniforme 0–9", "tratamento": "Intacto"}, {"tabela": "dim_produto", "campo": "DESCRICAO", "descricao": "Nome comercial do produto", "tipo": "String", "notas": "2.731 descrições", "tratamento": "Intacto"}, {"tabela": "dim_produto", "campo": "NIVEL_1 / NIVEL_2 / NIVEL_3", "descricao": "Hierarquia de categorias: N1=23 cats (A–X), N2=sub, N3=família", "tipo": "String", "notas": "N1 sem nulos; usar para análise macro", "tratamento": "Intacto"}, {"tabela": "dim_produto", "campo": "UNIDADE_ESTOQUE", "descricao": "Unidade base de armazenagem (referência para cálculo de estoque)", "tipo": "String", "notas": "Ex: UN, M2, KG", "tratamento": "Intacto"}, {"tabela": "dim_produto", "campo": "EMBALAGEM_FORNECEDOR", "descricao": "Formato de embalagem do fornecedor. Ex: CX-12-UN = caixa c/ 12 unidades", "tipo": "String", "notas": "59 nulos; 440 produtos em caixa de 1", "tratamento": "Nulos mantidos"}, {"tabela": "dim_produto", "campo": "CONVERSAO_COMPRA_ARMAZENAGEM", "descricao": "Fator para converter unidade de compra em unidade de estoque", "tipo": "Float", "notas": "Ex: 12 se compra caixa de 12", "tratamento": "Convertido de string com vírgula para float"}, {"tabela": "dim_produto", "campo": "CD_VOLTAGEM", "descricao": "Código de voltagem do produto: 0=N/A, 1=110V, 2=220V, 3=bivolt, 4–6=outros", "tipo": "Float", "notas": "48 nulos; 2078 produtos sem voltagem (N/A)", "tratamento": "Intacto"}, {"tabela": "dim_produto", "campo": "EMBALAGEM_VENDA_0/1/2", "descricao": "Descrição das embalagens de venda disponíveis para o produto", "tipo": "String", "notas": "Emb0=padrão; emb1 e emb2 = alternativas", "tratamento": "Intacto"}, {"tabela": "dim_lojas", "campo": "COD_EMPRESA", "descricao": "Código da loja (PK)", "tipo": "Integer", "notas": "1–9, 92, 93", "tratamento": "Intacto"}, {"tabela": "dim_lojas", "campo": "CD_CIDADE", "descricao": "Cidade da loja", "tipo": "String", "notas": "Recife, Salvador, João Pessoa, Natal, Aracaju, etc.", "tratamento": "Intacto"}, {"tabela": "dim_lojas", "campo": "CD_ESTADO", "descricao": "UF da loja", "tipo": "String", "notas": "PE, BA, PB, RN, SE", "tratamento": "Intacto"}], "outliers": {"total": 75, "sim": 0, "nao": 75, "rows": [{"loja": 8, "codigo": 119959, "desc": "ADAPTA.CX.ELET.AL    3/4   56251/052", "pmin": "R$ 3,68", "pmax": "R$ 362,14", "cv": "4,63", "hipotese": "Preço alto = venda em embalagem/caixa (EMBALAGEM=1, CONVERSAO=100); preço por unidade de armazenagem ≈ R$3.62. Conversão presente (≠1) — não é o bug de conversão ausente.", "suspeita": "não"}, {"loja": 4, "codigo": 119959, "desc": "ADAPTA.CX.ELET.AL    3/4   56251/052", "pmin": "R$ 3,68", "pmax": "R$ 391,54", "cv": "4,57", "hipotese": "Preço alto = venda em embalagem/caixa (EMBALAGEM=1, CONVERSAO=100); preço por unidade de armazenagem ≈ R$3.92. Conversão presente (≠1) — não é o bug de conversão ausente.", "suspeita": "não"}, {"loja": 2, "codigo": 119959, "desc": "ADAPTA.CX.ELET.AL    3/4   56251/052", "pmin": "R$ 3,04", "pmax": "R$ 391,54", "cv": "4,12", "hipotese": "Preço alto = venda em embalagem/caixa (EMBALAGEM=1, CONVERSAO=100); preço por unidade de armazenagem ≈ R$3.92. Conversão presente (≠1) — não é o bug de conversão ausente.", "suspeita": "não"}, {"loja": 3, "codigo": 369633, "desc": "CANALETA S/DIV. ADESIV. 10X10 2MT BR", "pmin": "R$ 7,25", "pmax": "R$ 745,40", "cv": "3,89", "hipotese": "Preço alto = venda em embalagem/caixa (EMBALAGEM=1, CONVERSAO=100); preço por unidade de armazenagem ≈ R$7.45. Conversão presente (≠1) — não é o bug de conversão ausente.", "suspeita": "não"}, {"loja": 3, "codigo": 270605, "desc": "CX.ELET.PLS 4X4 AM OCT0G.  57500/004", "pmin": "R$ 6,51", "pmax": "R$ 371,60", "cv": "3,66", "hipotese": "Preço alto = venda em embalagem/caixa (EMBALAGEM=1, CONVERSAO=60); preço por unidade de armazenagem ≈ R$6.19. Conversão presente (≠1) — não é o bug de conversão ausente.", "suspeita": "não"}, {"loja": 5, "codigo": 270605, "desc": "CX.ELET.PLS 4X4 AM OCT0G.  57500/004", "pmin": "R$ 7,25", "pmax": "R$ 371,60", "cv": "2,93", "hipotese": "Preço alto = venda em embalagem/caixa (EMBALAGEM=1, CONVERSAO=60); preço por unidade de armazenagem ≈ R$6.19. Conversão presente (≠1) — não é o bug de conversão ausente.", "suspeita": "não"}, {"loja": 4, "codigo": 421744, "desc": "PRATO SMES.CER.19CM SICILIANO  92956", "pmin": "R$ 10,49", "pmax": "R$ 299,14", "cv": "2,38", "hipotese": "Preço alto = venda em embalagem/caixa (EMBALAGEM=1, CONVERSAO=12); preço por unidade de armazenagem ≈ R$24.93. Conversão presente (≠1) — não é o bug de conversão ausente.", "suspeita": "não"}, {"loja": 4, "codigo": 326263, "desc": "SUPORTE 4X2 3MOD.  BR 850200DUALE UP", "pmin": "R$ 1,58", "pmax": "R$ 50,30", "cv": "2,01", "hipotese": "Preço alto = venda em embalagem/caixa (EMBALAGEM=1, CONVERSAO=25); preço por unidade de armazenagem ≈ R$2.01. Conversão presente (≠1) — não é o bug de conversão ausente.", "suspeita": "não"}, {"loja": 2, "codigo": 472199, "desc": "CANECA CER.270ML           PT 004503", "pmin": "R$ 6,29", "pmax": "R$ 227,85", "cv": "1,94", "hipotese": "Preço alto = venda em embalagem/caixa (EMBALAGEM=1, CONVERSAO=36); preço por unidade de armazenagem ≈ R$6.33. Conversão presente (≠1) — não é o bug de conversão ausente.", "suspeita": "não"}, {"loja": 4, "codigo": 421659, "desc": "PRATO RASO CER.26CM         VM 88335", "pmin": "R$ 9,35", "pmax": "R$ 430,50", "cv": "1,91", "hipotese": "Preço alto = venda em embalagem/caixa (EMBALAGEM=1, CONVERSAO=12); preço por unidade de armazenagem ≈ R$35.88. Conversão presente (≠1) — não é o bug de conversão ausente.", "suspeita": "não"}, {"loja": 4, "codigo": 177360, "desc": "TUBO P/VALVULA DESCARGA           BR", "pmin": "R$ 3,14", "pmax": "R$ 178,40", "cv": "1,87", "hipotese": "Preço alto = venda em embalagem/caixa (EMBALAGEM=1, CONVERSAO=20); preço por unidade de armazenagem ≈ R$8.92. Conversão presente (≠1) — não é o bug de conversão ausente.", "suspeita": "não"}, {"loja": 4, "codigo": 392084, "desc": "CX.ELET.EX.PLS  5 ENTRADAS PLASTIBOX", "pmin": "R$ 8,14", "pmax": "R$ 208,85", "cv": "1,87", "hipotese": "Preço alto = venda em embalagem/caixa (EMBALAGEM=1, CONVERSAO=20); preço por unidade de armazenagem ≈ R$10.44. Conversão presente (≠1) — não é o bug de conversão ausente.", "suspeita": "não"}]}, "inconsistencias": [{"titulo": "Queda sustentada de volume em 2025", "achado": "As transações caem de forma contínua ao longo de 2025; o ano fecha com 360.178 transações contra 730.212 em 2024 (−50,7%) e receita de R$ 151,7M vs R$ 330,9M (-54,2%).", "hipotese": "Os 24 meses estão completos (não é gap de dados) — a queda é uma tendência real. Possíveis causas: retração de mercado regional, descontinuação de operações ou migração de canal. Exige confirmação com a área comercial.", "status": "pendente"}, {"titulo": "Queda generalizada por categoria; Eletros lidera a perda", "achado": "Todas as categorias recuam em 2025. D — Eletros cai -63,8% (R$ 145,1M → R$ 52,5M) e puxa o resultado. R — Eletrônicos é a mais resiliente (-10,2%).", "hipotese": "A forte dependência de Eletros (categoria de maior ticket, ligada ao atacado da loja 93) amplifica a queda da rede. Convém isolar o efeito loja 93 do efeito rede física.", "status": "pendente"}, {"titulo": "Divergência entre preço cadastrado e praticado", "achado": "3.962 SKUs (13,9% de 28.543 comparáveis) têm preço médio praticado mais de 30% distante do preço de tabela (dim_precos).", "hipotese": "Parte é explicada por venda em embalagem/caixa (ver Bug 4) e por descontos/repricing ao longo do período. Não há evidência de erro sistêmico de cadastro, mas merece auditoria de precificação por categoria.", "status": "investigado"}, {"titulo": "80% da receita vem de SKUs sem compra registrada", "achado": "R$ 385,2M (79,8% da receita) vêm de 2.400 SKUs que vendem sem nenhuma entrada de compra nos 24 meses.", "hipotese": "O estoque inicial é o principal ativo operacional; a reposição provavelmente ocorre via transferência entre lojas ou em período anterior ao corte da base. Não é erro — é o que justifica a abordagem conservadora de estoque da Etapa 2.", "status": "investigado"}, {"titulo": "Loja 93 (Alhandra) é um outlier de canal", "achado": "Concentra 31,8% da receita (R$ 153,3M) com apenas 327 SKUs (12,0%); ticket médio R$ 6.160 vs R$ 309 da rede física (~20×).", "hipotese": "Comportamento típico de atacado/B2B. Mantida na base, mas segregada via FLAG_LOJA93 para não distorcer as médias da rede física.", "status": "investigado"}], "bugs": [{"n": 1, "sev": "Crítico", "titulo": "Receita por par calculada sem a loja 93", "encontrado": "A receita histórica por par (base do ranking de reposição) era calculada com excluir_atacado=True, removendo a loja 93 antes do cálculo.", "descoberto": "Cruzando os pares do skeleton (que incluem a loja 93, presente no estoque inicial) com a receita: 263 pares da loja 93 em ruptura apareciam com RECEITA_TOTAL nula.", "correcao": "Calcular a receita por par com todas as lojas (excluir_atacado=False); segregar o atacado apenas como filtro posterior de análise.", "antes": "0 pares da loja 93 no ranking", "depois": "263 pares da loja 93 reintegrados", "impacto": "Os itens de maior receita da base (condicionadores, lavadoras, TVs do atacado) voltaram ao topo do ranking de prioridade de reposição."}, {"n": 2, "sev": "Crítico", "titulo": "Skeleton montado só com o estoque inicial", "encontrado": "O universo de pares loja×produto era construído apenas a partir de fato_estoque_inicial, ignorando pares com venda e sem foto de estoque.", "descoberto": "Comparando os pares únicos de fato_vendas com os de fato_estoque_inicial: 3.379 pares de venda ficavam fora da projeção.", "correcao": "Skeleton = união dos pares de estoque inicial ∪ vendas ∪ compras. Pares sem foto inicial entram com ESTOQUE_INICIAL = 0 (lógica conservadora da Etapa 1).", "antes": "25.330 pares na cobertura", "depois": "28.721 pares na cobertura (+3.391)", "impacto": "+3.379 pares com venda voltam ao radar, rastreando +R$ 87,5M (18,1% da receita) antes invisíveis no estoque projetado."}, {"n": 3, "sev": "Médio", "titulo": "Dias de cobertura negativos em rupturas", "encontrado": "DIAS_COBERTURA = Estoque / Venda_média × 30 sem piso gerava valores negativos (ex.: −566 dias) para pares em ruptura.", "descoberto": "Inspeção da distribuição de DIAS_COBERTURA: mínimo de −720 dias e milhares de valores negativos sem significado de negócio.", "correcao": "Aplicar piso: DIAS_COBERTURA = 0 quando ESTOQUE_PROJ ≤ 0 (a condição de ruptura já é capturada pelo STATUS_ESTOQUE).", "antes": "14.939 valores negativos (mín. −720)", "depois": "0 valores negativos", "impacto": "Ordenações e médias de cobertura deixam de ser contaminadas por números negativos."}, {"n": 4, "sev": "Médio", "titulo": "Outliers de preço (investigação)", "encontrado": "Produto 119959 (Adaptador Cx. Elét. 3/4) com preço de R$ 3,68 a R$ 391,55 na mesma loja, incluindo mesmo dia/loja com os dois preços.", "descoberto": "Diagnóstico por embalagem: os lançamentos caros são EMBALAGEM=1 (caixa) com CONVERSAO=100 — R$ 391,55 ÷ 100 ≈ R$ 3,92/unidade, coerente com a venda unitária.", "correcao": "Investigação documentada em investigacao_outliers_preco.csv. Estendida aos 75 pares com CV de preço > 1.", "antes": "Suspeita: conversão de embalagem ausente", "depois": "75/75 explicados — não é bug", "impacto": "Conclusão: venda em caixa com conversão corretamente aplicada. Nenhum caso de EMBALAGEM=1 com CONVERSAO=1 (o padrão que seria erro de cadastro)."}], "gerado_em": "30/06/2026 11:12"};
+const STATUS_ORDER = ["EM RUPTURA","CRÍTICO","ATENÇÃO","SAUDÁVEL","SEM VENDA"];
+const STATUS_COLOR = {"EM RUPTURA":"#dc2626","CRÍTICO":"#d97706","ATENÇÃO":"#f59e0b","SAUDÁVEL":"#059669","SEM VENDA":"#6b7280"};
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ---- tabs ---- */
+document.querySelectorAll(".nav-item").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll(".nav-item").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(btn.dataset.tab).classList.add("active");
+    window.scrollTo({top:0,behavior:"instant"});
+  });
+});
+
+/* ---- ABA 1: KPIs + stepper ---- */
+const kpiDefs=[["receita_total","Receita total (24M)"],["transacoes","Transações"],
+  ["skus","SKUs ativos"],["lojas","Lojas"],["categorias","Categorias (N1)"],["periodo","Período"]];
+document.getElementById("kpiGrid").innerHTML = kpiDefs.map(([k,l])=>
+  `<div class="kpi"><div class="v">${esc(DATA.kpis[k])}</div><div class="l">${l}</div></div>`).join("");
+const steps=[["1","Etapa 1","Entendimento e limpeza dos dados brutos"],
+  ["2","Etapa 2","Estoque projetado e cobertura"],
+  ["3","Revisão","4 problemas de qualidade identificados"],
+  ["4","Correções","Bugs corrigidos e saídas regeneradas"]];
+document.getElementById("stepper").innerHTML = steps.map(([n,t,d])=>
+  `<div class="step"><div class="dot">${n}</div><div class="st-t">${t}</div><div class="st-d">${d}</div></div>`).join("");
+
+/* ---- ABA 2: decisões ---- */
+const impClass={"ESTRUTURAL":"b-estrutural","ALTO":"b-alto","MÉDIO":"b-medio","BAIXO":"b-baixo"};
+function renderDec(){
+  const q=document.getElementById("decSearch").value.toLowerCase();
+  const imp=document.querySelector("#t2 .filter-btn.active").dataset.imp;
+  const body=document.getElementById("decBody"); body.innerHTML="";
+  DATA.decisoes.forEach((d,i)=>{
+    const hay=(d.campo+d.problema+d.tratamento+d.justificativa).toLowerCase();
+    if(q && !hay.includes(q)) return;
+    if(imp!=="TODOS" && d.impacto!==imp) return;
+    const cls=impClass[d.impacto]||"b-baixo";
+    body.insertAdjacentHTML("beforeend",
+      `<tr class="exp-row" data-i="${i}"><td><span class="chev">▶</span></td>
+        <td><b>${esc(d.campo)}</b></td><td>${esc(d.problema)}</td>
+        <td><span class="badge ${cls}">${esc(d.impacto)}</span></td></tr>
+       <tr class="exp-detail" data-d="${i}"><td></td><td colspan="3"><dl>
+         <dt>Tratamento</dt><dd>${esc(d.tratamento)}</dd>
+         <dt>Justificativa</dt><dd>${esc(d.justificativa)}</dd></dl></td></tr>`);
+  });
+  body.querySelectorAll(".exp-row").forEach(r=>r.addEventListener("click",()=>{
+    r.classList.toggle("open");
+    body.querySelector(`.exp-detail[data-d="${r.dataset.i}"]`).classList.toggle("open");
+  }));
+}
+document.getElementById("decSearch").addEventListener("input",renderDec);
+document.querySelectorAll("#t2 .filter-btn").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll("#t2 .filter-btn").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active"); renderDec();
+}));
+renderDec();
+
+/* ---- ABA 3: chart + top15 ---- */
+const stBadge=s=>s==="EM RUPTURA"?"b-rup":(s==="CRÍTICO"?"b-crit":"b-ok");
+document.getElementById("topBody").innerHTML = DATA.top15.map(r=>
+  `<tr><td>${r.loja}</td><td>${esc(r.cidade)}</td><td><b>${r.codigo}</b><br><span class="muted">${esc(r.desc)}</span></td>
+    <td>${esc(r.nivel1)}</td><td class="num">${esc(r.estoque)}</td><td class="num">${esc(r.receita)}</td>
+    <td><span class="badge ${stBadge(r.status)}">${esc(r.status)}</span></td></tr>`).join("");
+// Gráfico via Chart.js (CDN). Guardado para degradar com elegância se o arquivo
+// for aberto offline e o CDN não carregar — assim as demais abas seguem renderizando.
+if(typeof Chart !== "undefined"){
+  new Chart(document.getElementById("statusChart"),{
+    type:"bar",
+    data:{labels:STATUS_ORDER,datasets:[
+      {label:"Antes da correção",data:STATUS_ORDER.map(s=>DATA.status_antes[s]),backgroundColor:"#cbd5e1"},
+      {label:"Depois da correção",data:STATUS_ORDER.map(s=>DATA.status_depois[s]),backgroundColor:STATUS_ORDER.map(s=>STATUS_COLOR[s])}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{title:{display:true,text:"Pares loja×produto por status — antes vs depois"},
+        tooltip:{callbacks:{label:c=>c.dataset.label+": "+c.parsed.y.toLocaleString("pt-BR")+" pares"}}},
+      scales:{y:{ticks:{callback:v=>v.toLocaleString("pt-BR")}}}}
+  });
+}else{
+  const tbl=STATUS_ORDER.map(s=>`<tr><td>${s}</td><td class="num">${DATA.status_antes[s].toLocaleString("pt-BR")}</td>`+
+    `<td class="num">${DATA.status_depois[s].toLocaleString("pt-BR")}</td></tr>`).join("");
+  document.getElementById("statusChart").closest(".chart-box").innerHTML =
+    `<p class="muted">Gráfico indisponível offline (Chart.js via CDN). Dados antes/depois:</p>`+
+    `<table><thead><tr><th>Status</th><th class="num">Antes</th><th class="num">Depois</th></tr></thead><tbody>${tbl}</tbody></table>`;
+}
+
+/* ---- ABA 4: bugs ---- */
+document.getElementById("bugList").innerHTML = DATA.bugs.map(b=>`
+  <div class="bug ${b.sev==='Médio'?'medio':''}">
+    <div class="bug-head"><div class="bug-num">${b.n}</div>
+      <h3 class="bug-title">${esc(b.titulo)}</h3>
+      <span class="badge ${b.sev==='Crítico'?'sev-critico':'sev-medio'}">${b.sev}</span></div>
+    <div class="bug-grid">
+      <div><div class="lbl">O que foi encontrado</div><div>${esc(b.encontrado)}</div></div>
+      <div><div class="lbl">Como foi descoberto</div><div>${esc(b.descoberto)}</div></div>
+      <div><div class="lbl">Correção aplicada</div><div>${esc(b.correcao)}</div></div>
+      <div><div class="lbl">Antes / depois</div>
+        <div class="ba"><span class="before">${esc(b.antes)}</span><span class="arrow">→</span>
+          <span class="after">${esc(b.depois)}</span></div></div>
+    </div>
+    <div class="impact"><b>Impacto:</b> ${esc(b.impacto)}</div>
+  </div>`).join("");
+
+/* ---- ABA 5: findings ---- */
+document.getElementById("findingList").innerHTML = DATA.inconsistencias.map(f=>`
+  <div class="finding">
+    <h3>${esc(f.titulo)}
+      <span class="badge ${f.status==='investigado'?'st-investigado':'st-pendente'}">${f.status}</span></h3>
+    <div class="meta"><b>Achado:</b> ${esc(f.achado)}</div>
+    <div class="meta"><b>Hipótese:</b> ${esc(f.hipotese)}</div>
+  </div>`).join("");
+
+/* ---- ABA 6: dicionário ---- */
+function renderDic(){
+  const q=document.getElementById("dicSearch").value.toLowerCase();
+  const rows=DATA.dicionario.filter(d=>!q || (d.campo+d.descricao+d.tabela+d.tipo).toLowerCase().includes(q));
+  const body=document.getElementById("dicBody"); body.innerHTML="";
+  let cur=null;
+  rows.forEach(d=>{
+    if(d.tabela!==cur){cur=d.tabela;
+      body.insertAdjacentHTML("beforeend",`<tr><td colspan="4" class="group-title">${esc(cur)}</td></tr>`);}
+    body.insertAdjacentHTML("beforeend",
+      `<tr><td><b>${esc(d.campo)}</b></td><td>${esc(d.descricao)}</td>
+        <td class="nowrap">${esc(d.tipo)}</td><td class="muted">${esc(d.tratamento)}</td></tr>`);
+  });
+  if(!rows.length) body.innerHTML=`<tr><td colspan="4" class="muted" style="padding:18px">Nenhum campo encontrado.</td></tr>`;
+}
+document.getElementById("dicSearch").addEventListener("input",renderDic);
+renderDic();
+
+/* ---- footer ---- */
+document.getElementById("footer").innerHTML =
+  `Relatório gerado em <b>${esc(DATA.gerado_em)}</b> · Fonte: bases tratadas em `+
+  `<code>data/processed/</code> e saídas em <code>outputs/etapa1</code> e <code>outputs/etapa2</code> · `+
+  `Case Técnico — Análise de Desempenho de Produtos no Varejo.`;
+</script>
+</body>
+</html>
