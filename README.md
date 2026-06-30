@@ -18,11 +18,13 @@ Análise completa de 24 meses de dados de uma rede de varejo de materiais de con
 │   ├── 03_etapa3_desempenho_vendas.ipynb    # 📘 notebook executado (rankings, ABC e sazonalidade)
 │   ├── 04_etapa4_cobertura_categoria_loja.ipynb # 📘 notebook executado (cobertura por categoria/loja)
 │   ├── 05_etapa5_precificacao_margem.ipynb  # 📘 notebook executado (margem, desconto e dispersão de preço)
+│   ├── 06_etapa6_projecao_compras.ipynb     # 📘 notebook executado (projeção de compras)
 │   ├── etapa1_entendimento_dados.py         # script-fonte de referência
 │   ├── etapa2_estoque_projetado.py          # script-fonte de referência (corrigido)
 │   ├── etapa3_desempenho_vendas.py          # script-fonte de referência
 │   ├── etapa4_cobertura_categoria_loja.py   # script-fonte de referência
-│   └── etapa5_precificacao_margem.py        # script-fonte de referência
+│   ├── etapa5_precificacao_margem.py        # script-fonte de referência
+│   └── etapa6_projecao_compras.py           # script-fonte de referência
 │
 ├── src/
 │   └── utils.py                    # Funções e constantes compartilhadas
@@ -36,6 +38,7 @@ Análise completa de 24 meses de dados de uma rede de varejo de materiais de con
 │   ├── etapa3/                     # Rankings, ABC, categorias, lojas e sazonalidade
 │   ├── etapa4/                     # Cobertura por categoria/loja e priorização de reposição
 │   ├── etapa5/                     # Margem, preço de lista/desconto, dispersão e candidatos a repricing
+│   ├── etapa6/                     # Projeção de compras, priorização e validações
 │   └── relatorio_qualidade_dados.html       # 📊 dashboard executivo (abre no navegador)
 │
 ├── requirements.txt
@@ -66,14 +69,18 @@ python etapa4_cobertura_categoria_loja.py
 # 6. Rodar Etapa 5 (precificação, margem, desconto e dispersão de preço)
 python etapa5_precificacao_margem.py
 
-# 7. (opcional) Reexecutar os notebooks de ponta a ponta
+# 7. Rodar Etapa 6 (projeção de compras para 90 dias)
+python etapa6_projecao_compras.py
+
+# 8. (opcional) Reexecutar os notebooks de ponta a ponta
 jupyter nbconvert --to notebook --execute --inplace 01_etapa1_entendimento_dados.ipynb
 jupyter nbconvert --to notebook --execute --inplace 02_etapa2_estoque_projetado.ipynb
 jupyter nbconvert --to notebook --execute --inplace 03_etapa3_desempenho_vendas.ipynb
 jupyter nbconvert --to notebook --execute --inplace 04_etapa4_cobertura_categoria_loja.ipynb
 jupyter nbconvert --to notebook --execute --inplace 05_etapa5_precificacao_margem.ipynb
+jupyter nbconvert --to notebook --execute --inplace 06_etapa6_projecao_compras.ipynb
 
-# 8. (opcional) Regenerar o dashboard HTML a partir dos CSVs
+# 9. (opcional) Regenerar o dashboard HTML a partir dos CSVs
 cd ..
 python scripts/gerar_dashboard.py
 ```
@@ -92,7 +99,8 @@ python scripts/gerar_dashboard.py
   `notebooks/02_etapa2_estoque_projetado.ipynb`,
   `notebooks/03_etapa3_desempenho_vendas.ipynb`,
   `notebooks/04_etapa4_cobertura_categoria_loja.ipynb` e
-  `notebooks/05_etapa5_precificacao_margem.ipynb` já trazem todos os outputs salvos — podem ser
+  `notebooks/05_etapa5_precificacao_margem.ipynb` e
+  `notebooks/06_etapa6_projecao_compras.ipynb` já trazem todos os outputs salvos — podem ser
   lidos direto no GitHub, VS Code ou Jupyter, sem rodar nada.
 
 ---
@@ -196,7 +204,7 @@ Arquivos auditáveis em `outputs/etapa4/`, incluindo cobertura por categorias/lo
 
 ### Etapa 5 — Precificação e Variação de Margem
 
-A Etapa 5 calcula a margem bruta realizada (R$ e %), markup e custo médio por SKU, categoria e loja, sempre na **mesma unidade de armazenagem**, e compara o preço praticado com o preço de lista (`dim_precos`) para medir o desconto efetivo — **dentro da mesma embalagem**. Também mede a dispersão de preço do mesmo SKU entre lojas (por embalagem) e prioriza candidatos a repricing. A Loja 93 (atacado/B2B) é segregada e o custo de cada universo usa apenas as compras das lojas do universo.
+A Etapa 5 calcula a margem bruta realizada (R$ e %), markup e custo médio por SKU, categoria e loja, sempre na **mesma unidade de armazenagem**, e compara o preço praticado com o preço de lista (`dim_precos`) para medir o desconto efetivo — **dentro da mesma embalagem**. Também mede a dispersão de preço do mesmo SKU entre lojas (por embalagem) e prioriza candidatos a repricing. A Loja 93 (atacado/B2B) é segregada em universo próprio e o custo de cada universo usa apenas as compras das lojas do universo.
 
 **Achados principais:**
 - Custo de compra válido existe só para **261 SKUs** (de 2.729 vendidos): **R$ 79,1M, 16,4% da receita** na rede completa (15,2% na rede física). A margem realizada vale apenas para esse subconjunto — análogo ao "88% vendem sem compra registrada" das Etapas 1/2.
@@ -204,7 +212,7 @@ A Etapa 5 calcula a margem bruta realizada (R$ e %), markup e custo médio por S
 - Maior margem por categoria na rede física (cobertura ≥10%): `C - PISOS E REVESTIMENTOS` (56,1%); menor: `D - ELETROS` (42,8%). `B - UTILIDADES DOMÉSTICAS` aparece com **margem negativa** (−15,4%) no subconjunto com custo — louças/porcelanas de baixo giro vendidas abaixo do custo.
 - Desconto efetivo médio ponderado na rede física: **17,4%**; **2.264** combinações loja×produto×embalagem vendem **acima da lista** (desconto negativo → tabela possivelmente desatualizada).
 - Dispersão de preço entre lojas (rede física, embalagem 0): apenas **46 SKUs com CV>30%** — bem abaixo da leitura ingênua de "2.549 SKUs com variação >30%", que misturava embalagem e atacado.
-- **3.261** candidatos a repricing na rede física (327 de prioridade ALTA), combinando margem baixa/negativa, desconto alto e preço fora da faixa da rede.
+- **3.260** candidatos a repricing na rede física (326 de prioridade ALTA), combinando margem baixa/negativa, desconto alto e preço fora da faixa da rede. O sinal de margem é calculado no grão loja×produto×embalagem.
 
 **Revisão de qualidade (autoaudit):** três armadilhas tratadas explicitamente — (1) **margens absurdas por erro de unidade**: preço e custo normalizados para a unidade de armazenagem mantêm todos os 261 markups na faixa sanitária (0,65×–4,76×), prevenindo o falso outlier de "venda em caixa"; (2) **custo de SKU sem compra vazando para a margem**: 2.468 SKUs (R$ 403,4M, 83,6% da receita) ficariam com margem fabricada se o custo fosse imputado — corrigido restringindo a margem aos SKUs com custo próprio; (3) **mistura de embalagem na dispersão**: a leitura ingênua marcava ~2,6k SKUs com variação >30%; separando embalagem e atacado, caem para 46 (pelo CV).
 
@@ -212,7 +220,7 @@ A Etapa 5 calcula a margem bruta realizada (R$ e %), markup e custo médio por S
 - Margem realizada existe só para os ~261 SKUs com custo (~16% da receita); o restante fica sem margem por ausência de dado, não por erro.
 - O custo é a média ponderada do período, sem camadas de custo (PEPS) nem custo de reposição atual.
 - O preço de lista (`dim_precos`) pode não refletir promoções pontuais; o desconto efetivo é uma aproximação.
-- A Loja 93 é atacado/B2B: margens não comparáveis ao varejo, por isso segregada.
+- A Loja 93 é atacado/B2B: margens não comparáveis ao varejo, por isso segregada em `LOJA_93_ATACADO_B2B` (margem auditável de 43,9% nos SKUs com custo).
 
 **Como executar:**
 
@@ -221,7 +229,30 @@ cd notebooks
 python etapa5_precificacao_margem.py
 ```
 
-Arquivos auditáveis em `outputs/etapa5/`: `margem_produtos.csv`, `margem_categorias_n1/n2/n3.csv`, `margem_lojas.csv`, `precificacao_desconto.csv`, `dispersao_preco_lojas.csv`, `candidatos_repricing.csv`, `recomendacoes_melhoria.csv`, `validacoes_etapa5.csv`, `autoaudit_etapa5.csv`, `resumo_etapa5.md` e `documentacao_tecnica_etapa5.md`.
+Arquivos auditáveis em `outputs/etapa5/`: `margem_produtos.csv`, `margem_categorias_n1/n2/n3.csv`, `margem_lojas.csv`, `margem_total_universo.csv`, `precificacao_desconto.csv`, `dispersao_preco_lojas.csv`, `candidatos_repricing.csv`, `recomendacoes_melhoria.csv`, `validacoes_etapa5.csv`, `autoaudit_etapa5.csv`, `resumo_etapa5.md` e `documentacao_tecnica_etapa5.md`.
+
+### Etapa 6 — Projeção de Compras para o Próximo Período
+
+A Etapa 6 transforma a cobertura e a priorização das etapas anteriores em um plano operacional de compra para **90 dias**, no grão loja×SKU. A quantidade recomendada usa demanda histórica do próprio par, estoque projetado utilizável e status de cobertura; o investimento financeiro só é estimado quando existe custo válido na Etapa 5. A Loja 93/B2B é tratada em escopo separado e os totais fecham em `REDE_COMPLETA`.
+
+**Achados principais:**
+- Rede completa: **20.324 pares loja×SKU** com compra recomendada, somando **1.019.445 unidades de armazenagem**.
+- Rede física sem Loja 93: **20.061 pares** recomendados, **993.649 unidades**, com **R$ 5,7M** de investimento conhecido.
+- Loja 93/B2B: **263 pares** recomendados, **25.796 unidades**, com **R$ 2,0M** de investimento conhecido.
+- Apenas **9,7%** dos pares recomendados têm custo válido; portanto, o plano é mais operacional do que financeiro até completar custos por SKU.
+- Categoria com maior volume recomendado na rede física: `C - PISOS E REVESTIMENTOS` (**264.264 unidades**). Loja física com maior volume: loja 3 (SALVADOR-BA), com **166.885 unidades**.
+- A fila operacional da rede física tem **2.007 pares de prioridade ALTA**.
+
+**Autoaudit / cuidados críticos:** ausência de demanda observada não vira compra; custo ausente não vira investimento zero; estoque negativo vira zero utilizável, não dívida adicional; e itens com margem negativa exigem validação de preço/margem antes de compra.
+
+**Como executar:**
+
+```bash
+cd notebooks
+python etapa6_projecao_compras.py
+```
+
+Arquivos auditáveis em `outputs/etapa6/`: `plano_compras_sku_loja.csv`, `plano_compras_total_universo.csv`, `plano_compras_categorias_n1.csv`, `plano_compras_lojas.csv`, `priorizacao_compras.csv`, `recomendacoes_melhoria.csv`, `validacoes_etapa6.csv`, `autoaudit_etapa6.csv`, `resumo_etapa6.md` e `documentacao_tecnica_etapa6.md`.
 
 ---
 
@@ -252,8 +283,7 @@ notebooks executados
 
 ## Próximas etapas (planejadas)
 
-- **Etapa 6** — Projeção de compras para o próximo período
-- **Etapa 7** — Recomendações: promoções, descontinuações, repricing
+- **Etapa 7** — Recomendações finais: promoções, descontinuações, repricing e plano de execução comercial
 - **Etapa 8** — Apresentação executiva
 
 ---

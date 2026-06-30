@@ -1,0 +1,5 @@
+﻿PRIORIDADE,TEMA,LIMITACAO_OU_PROBLEMA,RISCO_ANALITICO,RECOMENDACAO
+ALTA,Custo para orcamento,Apenas parte dos SKUs recomendados tem custo valido na Etapa 5.,O investimento conhecido subestima o desembolso total se usado como budget fechado.,Completar custo por SKU/fornecedor e data de vigencia antes de transformar quantidade em pedido financeiro.
+ALTA,Saldo fisico e transferencias,"Estoque projetado nao inclui transferencias, ajustes e inventario fisico posterior.",Falsos positivos de ruptura podem virar compra desnecessaria.,Validar saldo fisico dos itens de prioridade ALTA antes de emitir pedido.
+MEDIA,Demanda intermitente,"A demanda base usa media dos meses com venda, herdando a conservacao da Etapa 2.",Itens esporadicos podem receber compra acima do ritmo medio de calendario.,Rodar sensibilidade com media de calendario e sazonalidade antes do pedido final.
+MEDIA,Politica de estoque,"Nao ha lead time, lote minimo, multiplo de compra nem nivel de servico por categoria.","A quantidade recomendada recompõe cobertura alvo, mas nao otimiza lote economico.",Adicionar politicas de reposicao por categoria/fornecedor para converter recomendacao em pedido final.

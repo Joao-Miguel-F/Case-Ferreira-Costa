@@ -35,10 +35,10 @@ Premissas e decisoes metodologicas
 - Nulos/zeros/negativos. Precos de compra nulos (9,5% das linhas) sao excluidos
   do custo. Preco praticado nao tem nulos/zeros/negativos. Margens negativas
   (preco < custo) sao sinalizadas e justificadas, nunca silenciadas.
-- Universos. Toda saida agregada traz `UNIVERSO` com `REDE_COMPLETA` e
-  `REDE_FISICA_SEM_LOJA93`. A Loja 93 (atacado/B2B) entra na rede completa mas
-  e segregada; o custo de cada universo usa apenas as compras das lojas do
-  universo.
+- Universos. Toda saida agregada traz `UNIVERSO` com `REDE_COMPLETA`,
+  `REDE_FISICA_SEM_LOJA93` e `LOJA_93_ATACADO_B2B`. A Loja 93 (atacado/B2B)
+  entra na rede completa mas tambem e segregada; o custo de cada universo usa
+  apenas as compras das lojas do universo.
 - Reconciliacao. A receita por universo/categoria/loja reconcilia com os
   outputs auditaveis da Etapa 3; nada de receita e recalculado de forma
   divergente.
@@ -350,7 +350,7 @@ def candidatos_repricing(
     pd_u = precos_desc[precos_desc["UNIVERSO"] == universo].copy()
 
     sku_u = margem_sku[margem_sku["UNIVERSO"] == universo][
-        ["CODIGO", "CUSTO_MEDIO_ARM", "MARGEM_BRUTA_PCT", "MARKUP", "CURVA_ABC_RECEITA"]
+        ["CODIGO", "CUSTO_MEDIO_ARM", "CURVA_ABC_RECEITA"]
     ]
     cand = pd_u.merge(sku_u, on="CODIGO", how="left", validate="many_to_one")
 
@@ -362,6 +362,10 @@ def candidatos_repricing(
     cand["DESVIO_VS_MEDIANA_PCT"] = safe_div(
         cand["PRECO_PRATICADO_ARM"] - cand["PRECO_ARM_MEDIANA_REDE"], cand["PRECO_ARM_MEDIANA_REDE"]
     ) * 100
+
+    cand["MARGEM_BRUTA_RS"] = cand["PRECO_PRATICADO_ARM"] - cand["CUSTO_MEDIO_ARM"]
+    cand["MARGEM_BRUTA_PCT"] = safe_div(cand["MARGEM_BRUTA_RS"], cand["PRECO_PRATICADO_ARM"]) * 100
+    cand["MARKUP"] = safe_div(cand["PRECO_PRATICADO_ARM"], cand["CUSTO_MEDIO_ARM"])
 
     cand["MOTIVO_MARGEM_BAIXA"] = (
         cand["CUSTO_MEDIO_ARM"].notna() & (cand["MARGEM_BRUTA_PCT"] < LIMIAR_MARGEM_PCT)
@@ -509,8 +513,8 @@ def assert_true(nome, condicao, validacoes):
 
 
 def validar_etapa5(
-    vendas_completo, custo_completo, custo_fisico,
-    margem_sku, categorias_n1, lojas, precos_desc, dispersao, candidatos,
+    vendas_completo, custo_completo, custo_fisico, custo_loja93,
+    total, margem_sku, categorias_n1, lojas, precos_desc, dispersao, candidatos,
 ):
     val: list[dict] = []
 
@@ -521,7 +525,10 @@ def validar_etapa5(
     rec_93 = float(vendas_completo[vendas_completo["COD_EMPRESA"] == LOJA_ATACADO]["RECEITA"].sum())
     assert_close("Receita rede completa vs Etapa 3", rec_completa, float(imp.loc["REDE_COMPLETA", "RECEITA"]), val)
     assert_close("Receita rede fisica vs Etapa 3", rec_fisica, float(imp.loc["REDE_FISICA_SEM_LOJA93", "RECEITA"]), val)
+    assert_close("Receita Loja 93/B2B vs Etapa 3", rec_93, float(imp.loc[ESCOPO_LOJA93, "RECEITA"]), val)
     assert_close("REDE_COMPLETA = REDE_FISICA + Loja 93", rec_completa, rec_fisica + rec_93, val)
+    assert_true("Universo Loja 93/B2B gerado nas saidas agregadas",
+                bool(ESCOPO_LOJA93 in set(total["UNIVERSO"])), val)
 
     # 2. Reconciliacao por categoria N1 e por loja vs Etapa 3.
     cat3 = pd.read_csv(E3 / "desempenho_categorias_n1.csv", encoding="utf-8-sig")
@@ -565,6 +572,8 @@ def validar_etapa5(
     # 6. Custo da rede fisica nao usa compras da Loja 93.
     assert_true("Custo rede fisica <= custo rede completa em SKUs",
                 bool(custo_fisico["CUSTO_MEDIO_ARM"].notna().sum() <= custo_completo["CUSTO_MEDIO_ARM"].notna().sum()), val)
+    assert_true("Custo Loja 93/B2B <= custo rede completa em SKUs",
+                bool(custo_loja93["CUSTO_MEDIO_ARM"].notna().sum() <= custo_completo["CUSTO_MEDIO_ARM"].notna().sum()), val)
 
     # 7. Desconto e preco comparados na MESMA embalagem (chave inclui EMBALAGEM).
     assert_true("Precificacao tem grao por embalagem", bool("EMBALAGEM" in precos_desc.columns), val)
@@ -577,6 +586,22 @@ def validar_etapa5(
     # 9. Candidatos tem pelo menos um motivo cada.
     assert_true("Todo candidato a repricing tem >= 1 motivo",
                 bool((candidatos["N_MOTIVOS"] >= 1).all()), val)
+
+    cand_custo = candidatos[
+        candidatos["CUSTO_MEDIO_ARM"].notna()
+        & candidatos["PRECO_PRATICADO_ARM"].notna()
+        & (candidatos["PRECO_PRATICADO_ARM"] > 0)
+    ].copy()
+    if len(cand_custo):
+        margem_local = (
+            (cand_custo["PRECO_PRATICADO_ARM"] - cand_custo["CUSTO_MEDIO_ARM"])
+            / cand_custo["PRECO_PRATICADO_ARM"] * 100
+        )
+        assert_close("Candidato: margem % no grao loja-produto-embalagem (max abs)",
+                     float((cand_custo["MARGEM_BRUTA_PCT"] - margem_local).abs().max()), 0.0, val)
+        assert_true("Candidato: flag de margem baixa usa margem local",
+                    bool((cand_custo["MOTIVO_MARGEM_BAIXA"]
+                          == (cand_custo["MARGEM_BRUTA_PCT"] < LIMIAR_MARGEM_PCT).astype(int)).all()), val)
 
     return pd.DataFrame(val)
 
@@ -650,11 +675,12 @@ def salvar_csv(df: pd.DataFrame, nome: str) -> None:
 
 # ── Resumo executivo e documentacao tecnica ───────────────────────────────────
 def gerar_resumo(
-    total_completo, total_fisico, categorias_n1, lojas, margem_sku,
+    total_completo, total_fisico, total_loja93, categorias_n1, lojas, margem_sku,
     precos_desc, dispersao, candidatos, autoaudit, validacoes, n_skus_compra,
 ):
     tc = total_completo.iloc[0]
     tf = total_fisico.iloc[0]
+    tl = total_loja93.iloc[0]
 
     cat_fis = categorias_n1[categorias_n1["UNIVERSO"] == UNIVERSO_FISICO].copy()
     # So destaca margem de categorias com cobertura de custo minimamente
@@ -726,7 +752,8 @@ e o analogo do achado das Etapas 1/2 ("88% vendem sem compra registrada"):
 - Esses SKUs respondem por {fmt_brl_milhao(tc['RECEITA_COM_CUSTO'])}
   ({fmt_pct(tc['COBERTURA_CUSTO_RECEITA_PCT'])} da receita) na rede completa e
   {fmt_brl_milhao(tf['RECEITA_COM_CUSTO'])} ({fmt_pct(tf['COBERTURA_CUSTO_RECEITA_PCT'])})
-  na rede fisica.
+  na rede fisica. Na Loja 93/B2B, a cobertura auditavel e
+  {fmt_brl_milhao(tl['RECEITA_COM_CUSTO'])} ({fmt_pct(tl['COBERTURA_CUSTO_RECEITA_PCT'])}).
 - Os demais SKUs **nao recebem margem por ausencia de dado, nunca por erro**.
   A margem deste relatorio vale para esse subconjunto, nao para a rede toda.
 
@@ -777,12 +804,14 @@ e o analogo do achado das Etapas 1/2 ("88% vendem sem compra registrada"):
 - O preco de lista pode nao refletir promocoes pontuais; o desconto efetivo e uma
   aproximacao.
 - A Loja 93 e atacado/B2B: margens nao comparaveis ao varejo, por isso segregada.
+  A etapa gera um universo explicito `LOJA_93_ATACADO_B2B` para auditar esse canal.
 
 ## Validacoes
 
 - {len(validacoes)} validacoes executadas, todas com status
   `{validacoes['STATUS'].unique()[0]}`.
-- Receita por universo, categoria e loja reconcilia com a Etapa 3.
+- Receita por universo, categoria e loja reconcilia com a Etapa 3, incluindo
+  `LOJA_93_ATACADO_B2B`.
 - Nenhuma margem % calculada sobre custo ausente; margens negativas sinalizadas.
 - Preco praticado e de lista comparados apenas dentro da mesma embalagem.
 
@@ -848,9 +877,10 @@ Tudo e comparado na unidade de ARMAZENAGEM:
 
 ## Separacao da Loja 93
 
-Saidas agregadas trazem `UNIVERSO` com `REDE_COMPLETA` e `REDE_FISICA_SEM_LOJA93`.
-O custo de cada universo usa apenas as compras das lojas do universo. Candidatos e
-dispersao da rede fisica nao incluem a Loja 93 (atacado/B2B).
+Saidas agregadas trazem `UNIVERSO` com `REDE_COMPLETA`, `REDE_FISICA_SEM_LOJA93`
+e `LOJA_93_ATACADO_B2B`. O custo de cada universo usa apenas as compras das
+lojas do universo. Candidatos e dispersao da rede fisica nao incluem a Loja 93
+(atacado/B2B), e o canal B2B fica auditavel em universo proprio.
 
 ## Arquivos gerados
 
@@ -898,12 +928,23 @@ def main() -> None:
     print("Calculando custo medio por SKU (rede completa e rede fisica)...")
     custo_completo = custo_medio_por_sku(compras, conversao)
     custo_fisico = custo_medio_por_sku(compras[compras["COD_EMPRESA"] != LOJA_ATACADO], conversao)
+    custo_loja93 = custo_medio_por_sku(compras[compras["COD_EMPRESA"] == LOJA_ATACADO], conversao)
 
     vendas_fisico = vendas[vendas["COD_EMPRESA"] != LOJA_ATACADO].copy()
+    vendas_loja93 = vendas[vendas["COD_EMPRESA"] == LOJA_ATACADO].copy()
     base_completo = base_margem_universo(vendas, custo_completo)
     base_fisico = base_margem_universo(vendas_fisico, custo_fisico)
-    bases = {UNIVERSO_COMPLETO: base_completo, UNIVERSO_FISICO: base_fisico}
-    custos = {UNIVERSO_COMPLETO: custo_completo, UNIVERSO_FISICO: custo_fisico}
+    base_loja93 = base_margem_universo(vendas_loja93, custo_loja93)
+    bases = {
+        UNIVERSO_COMPLETO: base_completo,
+        ESCOPO_LOJA93: base_loja93,
+        UNIVERSO_FISICO: base_fisico,
+    }
+    custos = {
+        UNIVERSO_COMPLETO: custo_completo,
+        ESCOPO_LOJA93: custo_loja93,
+        UNIVERSO_FISICO: custo_fisico,
+    }
 
     print("Agregando margem por categoria, loja e total...")
     total = pd.concat([agregar_margem(b, u, []) for u, b in bases.items()], ignore_index=True)
@@ -934,7 +975,7 @@ def main() -> None:
 
     print("Validando reconciliacoes...")
     validacoes = validar_etapa5(
-        vendas, custo_completo, custo_fisico, margem_sku, categorias_n1, lojas,
+        vendas, custo_completo, custo_fisico, custo_loja93, total, margem_sku, categorias_n1, lojas,
         precos_desc, dispersao, candidatos)
 
     print("Salvando arquivos auditaveis...")
@@ -952,8 +993,9 @@ def main() -> None:
 
     total_completo = total[total["UNIVERSO"] == UNIVERSO_COMPLETO].reset_index(drop=True)
     total_fisico = total[total["UNIVERSO"] == UNIVERSO_FISICO].reset_index(drop=True)
+    total_loja93 = total[total["UNIVERSO"] == ESCOPO_LOJA93].reset_index(drop=True)
     n_skus_compra = int(compras["CODIGO"].nunique())
-    resumo = gerar_resumo(total_completo, total_fisico, categorias_n1, lojas, margem_sku,
+    resumo = gerar_resumo(total_completo, total_fisico, total_loja93, categorias_n1, lojas, margem_sku,
                           precos_desc, dispersao, candidatos, autoaudit, validacoes, n_skus_compra)
     (OUT / "resumo_etapa5.md").write_text(resumo, encoding="utf-8")
     (OUT / "documentacao_tecnica_etapa5.md").write_text(gerar_documentacao_tecnica(), encoding="utf-8")
@@ -965,6 +1007,8 @@ def main() -> None:
     print(f"SKUs com custo: {int(tc['SKUS_COM_CUSTO'])} de {int(tc['SKUS'])} "
           f"({tc['COBERTURA_CUSTO_RECEITA_PCT']:.1f}% da receita)")
     print(f"Margem % rede completa: {tc['MARGEM_BRUTA_PCT']:.1f}% | rede fisica: {tf['MARGEM_BRUTA_PCT']:.1f}%")
+    tl = total_loja93.iloc[0]
+    print(f"Margem % Loja 93/B2B: {tl['MARGEM_BRUTA_PCT']:.1f}%")
     print(f"Markup rede fisica: {tf['MARKUP_PONDERADO']:.2f}x")
     print(f"Candidatos a repricing (rede fisica): "
           f"{len(candidatos[candidatos['UNIVERSO'] == UNIVERSO_FISICO])}")

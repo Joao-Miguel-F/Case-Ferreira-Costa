@@ -31,7 +31,8 @@ e o analogo do achado das Etapas 1/2 ("88% vendem sem compra registrada"):
 - Esses SKUs respondem por R$ 79,1M
   (16,4% da receita) na rede completa e
   R$ 49,9M (15,2%)
-  na rede fisica.
+  na rede fisica. Na Loja 93/B2B, a cobertura auditavel e
+  R$ 19,7M (12,8%).
 - Os demais SKUs **nao recebem margem por ausencia de dado, nunca por erro**.
   A margem deste relatorio vale para esse subconjunto, nao para a rede toda.
 
@@ -61,7 +62,7 @@ e o analogo do achado das Etapas 1/2 ("88% vendem sem compra registrada"):
 - Dispersao de preco entre lojas (rede fisica, embalagem 0): apenas
   46 SKUs com CV>30% - bem abaixo da leitura ingenua de
   "2.549 SKUs com variacao >30%", que misturava embalagem e atacado.
-- Candidatos a repricing na rede fisica: 3.261 combinacoes
+- Candidatos a repricing na rede fisica: 3.260 combinacoes
   loja x produto x embalagem com pelo menos um sinal (margem baixa/negativa,
   desconto alto ou preco fora da faixa).
 
@@ -83,12 +84,14 @@ e o analogo do achado das Etapas 1/2 ("88% vendem sem compra registrada"):
 - O preco de lista pode nao refletir promocoes pontuais; o desconto efetivo e uma
   aproximacao.
 - A Loja 93 e atacado/B2B: margens nao comparaveis ao varejo, por isso segregada.
+  A etapa gera um universo explicito `LOJA_93_ATACADO_B2B` para auditar esse canal.
 
 ## Validacoes
 
-- 16 validacoes executadas, todas com status
+- 21 validacoes executadas, todas com status
   `OK`.
-- Receita por universo, categoria e loja reconcilia com a Etapa 3.
+- Receita por universo, categoria e loja reconcilia com a Etapa 3, incluindo
+  `LOJA_93_ATACADO_B2B`.
 - Nenhuma margem % calculada sobre custo ausente; margens negativas sinalizadas.
 - Preco praticado e de lista comparados apenas dentro da mesma embalagem.
 

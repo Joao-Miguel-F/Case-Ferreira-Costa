@@ -48,9 +48,10 @@ Tudo e comparado na unidade de ARMAZENAGEM:
 
 ## Separacao da Loja 93
 
-Saidas agregadas trazem `UNIVERSO` com `REDE_COMPLETA` e `REDE_FISICA_SEM_LOJA93`.
-O custo de cada universo usa apenas as compras das lojas do universo. Candidatos e
-dispersao da rede fisica nao incluem a Loja 93 (atacado/B2B).
+Saidas agregadas trazem `UNIVERSO` com `REDE_COMPLETA`, `REDE_FISICA_SEM_LOJA93`
+e `LOJA_93_ATACADO_B2B`. O custo de cada universo usa apenas as compras das
+lojas do universo. Candidatos e dispersao da rede fisica nao incluem a Loja 93
+(atacado/B2B), e o canal B2B fica auditavel em universo proprio.
 
 ## Arquivos gerados
 

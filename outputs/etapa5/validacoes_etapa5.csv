@@ -1,7 +1,9 @@
 ﻿VALIDACAO,OBSERVADO,ESPERADO,DIFERENCA,STATUS
 Receita rede completa vs Etapa 3,482515748.115843,482515748.115843,0.000000,OK
 Receita rede fisica vs Etapa 3,329234755.542707,329234755.542707,0.000000,OK
+Receita Loja 93/B2B vs Etapa 3,153280992.573136,153280992.573136,0.000000,OK
 REDE_COMPLETA = REDE_FISICA + Loja 93,482515748.115843,482515748.115843,-0.000000,OK
+Universo Loja 93/B2B gerado nas saidas agregadas,1.000000,1.000000,0.000000,OK
 Categoria N1: receita vs Etapa 3 (max abs),0.000000,0.000000,0.000000,OK
 Loja: receita vs Etapa 3 (max abs),0.000000,0.000000,0.000000,OK
 Margem por SKU so com custo presente,1.000000,1.000000,0.000000,OK
@@ -11,7 +13,10 @@ Markup positivo e sem estouro de unidade,1.000000,1.000000,0.000000,OK
 Margens negativas sinalizadas (flag coerente),1.000000,1.000000,0.000000,OK
 Categoria: receita com custo = CMV + margem (max abs),0.000000,0.000000,0.000000,OK
 Custo rede fisica <= custo rede completa em SKUs,1.000000,1.000000,0.000000,OK
+Custo Loja 93/B2B <= custo rede completa em SKUs,1.000000,1.000000,0.000000,OK
 Precificacao tem grao por embalagem,1.000000,1.000000,0.000000,OK
 Dispersao separada por embalagem,1.000000,1.000000,0.000000,OK
 Loja 93 fora do universo fisico (lojas),1.000000,1.000000,0.000000,OK
 Todo candidato a repricing tem >= 1 motivo,1.000000,1.000000,0.000000,OK
+Candidato: margem % no grao loja-produto-embalagem (max abs),0.000000,0.000000,0.000000,OK
+Candidato: flag de margem baixa usa margem local,1.000000,1.000000,0.000000,OK

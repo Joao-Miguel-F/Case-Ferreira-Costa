@@ -9,6 +9,7 @@ Os números vêm de:
   - outputs/etapa2/cobertura_estoque.csv, investigacao_outliers_preco.csv
   - outputs/etapa3/*.csv (rankings, ABC, desempenho, notas e recomendações)
   - outputs/etapa4/*.csv (cobertura por categoria/loja, priorização e validações)
+  - outputs/etapa6/*.csv (projecao de compras, priorizacao e validacoes)
   - data/processed/*.parquet (KPIs, distribuição de status antes/depois, YoY)
 
 A distribuição de status "antes" é RECONSTRUÍDA pela lógica pré-correção (skeleton
@@ -35,6 +36,7 @@ E2 = OUTPUTS / "etapa2"
 E3 = OUTPUTS / "etapa3"
 E4 = OUTPUTS / "etapa4"
 E5 = OUTPUTS / "etapa5"
+E6 = OUTPUTS / "etapa6"
 STATUS_ORDER = ["EM RUPTURA", "CRÍTICO", "ATENÇÃO", "SAUDÁVEL", "SEM VENDA"]
 
 # ── formatação pt-BR ────────────────────────────────────────────────────────
@@ -206,10 +208,11 @@ _TEMPLATE = r"""<!DOCTYPE html>
   <button class="nav-item" data-tab="t4"><span class="nav-num">4</span> Desempenho vendas</button>
   <button class="nav-item" data-tab="t5"><span class="nav-num">5</span> Cobertura cat./loja</button>
   <button class="nav-item" data-tab="te5"><span class="nav-num">6</span> Precificação e margem</button>
-  <button class="nav-item" data-tab="t6"><span class="nav-num">7</span> Bugs corrigidos</button>
-  <button class="nav-item" data-tab="t7"><span class="nav-num">8</span> Inconsistências</button>
-  <button class="nav-item" data-tab="t8"><span class="nav-num">9</span> Dicionário de dados</button>
-  <button class="nav-item" data-tab="t9"><span class="nav-num">10</span> Glossário comercial</button>
+  <button class="nav-item" data-tab="te6"><span class="nav-num">7</span> Projeção compras</button>
+  <button class="nav-item" data-tab="t6"><span class="nav-num">8</span> Bugs corrigidos</button>
+  <button class="nav-item" data-tab="t7"><span class="nav-num">9</span> Inconsistências</button>
+  <button class="nav-item" data-tab="t8"><span class="nav-num">10</span> Dicionário de dados</button>
+  <button class="nav-item" data-tab="t9"><span class="nav-num">11</span> Glossário comercial</button>
 </nav>
 
 <main class="main">
@@ -217,7 +220,7 @@ _TEMPLATE = r"""<!DOCTYPE html>
   <section id="t1" class="panel active">
     <span class="section-tag">Visão geral</span>
     <h1>Relatório de qualidade de dados</h1>
-    <p class="lead">Consolidação das Etapas 1 a 5 do case, da revisão de qualidade e das 4 correções
+    <p class="lead">Consolidação das Etapas 1 a 6 do case, da revisão de qualidade e das 4 correções
        aplicadas. Todos os números são lidos das bases tratadas e dos CSVs de saída.</p>
     <div class="kpi-grid" id="kpiGrid"></div>
     <h2>Linha do tempo</h2>
@@ -406,6 +409,51 @@ _TEMPLATE = r"""<!DOCTYPE html>
     </table></div></div>
   </section>
 
+  <!-- ABA 5c — ETAPA 6 -->
+  <section id="te6" class="panel">
+    <span class="section-tag">Etapa 6</span>
+    <h1>Projecao de compras para 90 dias</h1>
+    <p class="lead">Plano operacional de compra no grao loja x SKU, usando cobertura, demanda historica,
+       custo valido e sinais de margem. A rede fisica fica separada da Loja 93/B2B, com reconciliacao em
+       <code>REDE_COMPLETA</code>.</p>
+    <div class="kpi-grid" id="e6KpiGrid"></div>
+    <div class="method">
+      <b>Metodologia:</b> quantidade recomendada =
+      <code>max(venda media mensal x 3 - estoque utilizavel, 0)</code>, arredondada para cima na unidade
+      de armazenagem, apenas para pares em ruptura, critico ou atencao com demanda observada. Estoque
+      projetado negativo vira zero utilizavel, nao uma divida adicional. Investimento so e estimado quando
+      ha custo valido na Etapa 5; itens sem custo permanecem com quantidade operacional, mas sem budget.
+    </div>
+
+    <h2>Top categorias por quantidade recomendada</h2>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>Universo</th><th>Categoria N1</th><th class="num">Pares compra</th>
+        <th class="num">Qtd recomendada</th><th class="num">Investimento conhecido</th>
+        <th class="num">Cobertura custo</th></tr></thead>
+      <tbody id="e6CatBody"></tbody>
+    </table></div></div>
+
+    <h2>Top lojas por quantidade recomendada</h2>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>Universo</th><th>Loja</th><th>Cidade/UF</th><th class="num">Pares compra</th>
+        <th class="num">Qtd recomendada</th><th class="num">Investimento conhecido</th></tr></thead>
+      <tbody id="e6LojaBody"></tbody>
+    </table></div></div>
+
+    <h2>Prioridades de compra</h2>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>Escopo</th><th>Rank</th><th>Prioridade</th><th>Loja</th><th>Produto</th>
+        <th class="num">Qtd</th><th class="num">Investimento</th><th>Status orcamento</th></tr></thead>
+      <tbody id="e6PrioBody"></tbody>
+    </table></div></div>
+
+    <h2>Autoaudit / revisao critica</h2>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>Risco</th><th>Controle aplicado</th><th>Evidencia</th><th>Risco remanescente</th></tr></thead>
+      <tbody id="e6AuditBody"></tbody>
+    </table></div></div>
+  </section>
+
   <!-- ABA 6 -->
   <section id="t6" class="panel">
     <span class="section-tag">Revisão de qualidade</span>
@@ -545,7 +593,8 @@ const steps=[["1","Etapa 1","Entendimento e limpeza dos dados brutos"],
   ["3","Etapa 3","Desempenho de vendas, ABC e sazonalidade"],
   ["4","Etapa 4","Cobertura por categoria e loja"],
   ["5","Etapa 5","Precificação e variação de margem"],
-  ["6","Revisão","Correções e limitações documentadas"]];
+  ["6","Etapa 6","Projeção de compras para 90 dias"],
+  ["7","Revisão","Correções e limitações documentadas"]];
 document.getElementById("stepper").innerHTML = steps.map(([n,t,d])=>
   `<div class="step"><div class="dot">${n}</div><div class="st-t">${t}</div><div class="st-d">${d}</div></div>`).join("");
 
@@ -740,10 +789,41 @@ if(DATA.etapa5){
     `<tr><td><b>${esc(r.problema)}</b></td><td>${esc(r.antes)}</td><td>${esc(r.depois)}</td></tr>`).join("");
 }
 
+/* ---- ABA 5c: etapa 6 (projecao de compras) ---- */
+if(DATA.etapa6){
+  const e6Kpis=[
+    ["pares_compra","Pares com compra"],
+    ["qtd_fisica","Qtd rede fisica"],
+    ["invest_fisica","Investimento conhecido"],
+    ["cobertura_custo","Cobertura custo"],
+    ["alta_fisica","Prioridade ALTA"],
+    ["validacoes","Validacoes"]
+  ];
+  document.getElementById("e6KpiGrid").innerHTML = e6Kpis.map(([k,l])=>
+    `<div class="kpi"><div class="v">${esc(DATA.etapa6.kpis[k])}</div><div class="l">${l}</div></div>`).join("");
+  document.getElementById("e6CatBody").innerHTML = DATA.etapa6.categorias.map(r=>
+    `<tr><td>${esc(r.universo)}</td><td>${esc(r.categoria)}</td>`+
+    `<td class="num">${esc(r.pares)}</td><td class="num">${esc(r.qtd)}</td>`+
+    `<td class="num">${esc(r.investimento)}</td><td class="num">${esc(r.cobertura)}</td></tr>`).join("");
+  document.getElementById("e6LojaBody").innerHTML = DATA.etapa6.lojas.map(r=>
+    `<tr><td>${esc(r.universo)}</td><td>${esc(r.loja)}</td><td>${esc(r.cidade)}</td>`+
+    `<td class="num">${esc(r.pares)}</td><td class="num">${esc(r.qtd)}</td>`+
+    `<td class="num">${esc(r.investimento)}</td></tr>`).join("");
+  document.getElementById("e6PrioBody").innerHTML = DATA.etapa6.prioridades.map(r=>
+    `<tr><td>${esc(r.escopo)}</td><td class="num">${esc(r.rank)}</td>`+
+    `<td><span class="badge ${r.faixa==='ALTA'?'sev-critico':(r.faixa==='MEDIA'?'sev-medio':'b-baixo')}">${esc(r.faixa)}</span></td>`+
+    `<td>${esc(r.loja)}</td><td><b>${esc(r.codigo)}</b><br><span class="muted">${esc(r.desc)}</span></td>`+
+    `<td class="num">${esc(r.qtd)}</td><td class="num">${esc(r.investimento)}</td>`+
+    `<td>${esc(r.status_orcamento)}</td></tr>`).join("");
+  document.getElementById("e6AuditBody").innerHTML = DATA.etapa6.autoaudit.map(r=>
+    `<tr><td><b>${esc(r.risco)}</b></td><td>${esc(r.controle)}</td>`+
+    `<td>${esc(r.evidencia)}</td><td>${esc(r.risco_remanescente)}</td></tr>`).join("");
+}
+
 /* ---- footer ---- */
 document.getElementById("footer").innerHTML =
   `Relatório gerado em <b>${esc(DATA.gerado_em)}</b> · Fonte: bases tratadas em `+
-  `<code>data/processed/</code> e saídas em <code>outputs/etapa1</code>…<code>outputs/etapa5</code> · `+
+  `<code>data/processed/</code> e saídas em <code>outputs/etapa1</code>…<code>outputs/etapa6</code> · `+
   `Case Técnico — Análise de Desempenho de Produtos no Varejo.`;
 </script>
 </body>
@@ -1102,6 +1182,14 @@ artefatos_dicionario = [
     (E5 / "validacoes_etapa5.csv", "output_etapa5.validacoes_etapa5"),
     (E5 / "autoaudit_etapa5.csv", "output_etapa5.autoaudit_etapa5"),
     (E5 / "margem_total_universo.csv", "output_etapa5.margem_total_universo"),
+    (E6 / "plano_compras_sku_loja.csv", "output_etapa6.plano_compras_sku_loja"),
+    (E6 / "plano_compras_total_universo.csv", "output_etapa6.plano_compras_total_universo"),
+    (E6 / "plano_compras_categorias_n1.csv", "output_etapa6.plano_compras_categorias_n1"),
+    (E6 / "plano_compras_lojas.csv", "output_etapa6.plano_compras_lojas"),
+    (E6 / "priorizacao_compras.csv", "output_etapa6.priorizacao_compras"),
+    (E6 / "recomendacoes_melhoria.csv", "output_etapa6.recomendacoes_melhoria"),
+    (E6 / "validacoes_etapa6.csv", "output_etapa6.validacoes_etapa6"),
+    (E6 / "autoaudit_etapa6.csv", "output_etapa6.autoaudit_etapa6"),
 ]
 for path, tabela in artefatos_dicionario:
     if path.exists():
@@ -1514,6 +1602,109 @@ if (E5 / "margem_total_universo.csv").exists():
         "autoaudit": audit_rows5,
     }
 
+# ---- Etapa 6: projecao de compras ----
+print("Carregando saidas da Etapa 6...")
+etapa6 = None
+if (E6 / "plano_compras_total_universo.csv").exists():
+    e6_total = pd.read_csv(E6 / "plano_compras_total_universo.csv", encoding="utf-8-sig")
+    e6_cat = pd.read_csv(E6 / "plano_compras_categorias_n1.csv", encoding="utf-8-sig")
+    e6_lojas = pd.read_csv(E6 / "plano_compras_lojas.csv", encoding="utf-8-sig")
+    e6_prio = pd.read_csv(E6 / "priorizacao_compras.csv", encoding="utf-8-sig")
+    e6_audit = pd.read_csv(E6 / "autoaudit_etapa6.csv", encoding="utf-8-sig")
+    e6_valid = pd.read_csv(E6 / "validacoes_etapa6.csv", encoding="utf-8-sig")
+
+    tf6 = e6_total[e6_total["UNIVERSO"] == "REDE_FISICA_SEM_LOJA93"].iloc[0]
+    tc6 = e6_total[e6_total["UNIVERSO"] == "REDE_COMPLETA"].iloc[0]
+    prio_fis6 = e6_prio[e6_prio["UNIVERSO_OPERACIONAL"] == "REDE_FISICA_SEM_LOJA93"]
+    alta_fis6 = int((prio_fis6["FAIXA_PRIORIDADE"] == "ALTA").sum())
+
+    def fmt_invest6(v):
+        return "sem custo" if pd.isna(v) else fmt_milhao(float(v))
+
+    cat_rows6 = []
+    for universo in ["REDE_FISICA_SEM_LOJA93", "LOJA_93_ATACADO_B2B"]:
+        top_cat = (
+            e6_cat[(e6_cat["UNIVERSO"] == universo) & (e6_cat["QTD_RECOMENDADA_ARM"] > 0)]
+            .sort_values("QTD_RECOMENDADA_ARM", ascending=False)
+            .head(6)
+        )
+        for r in top_cat.itertuples():
+            cat_rows6.append({
+                "universo": universo,
+                "categoria": str(r.NIVEL_1),
+                "pares": fmt_int(float(r.PARES_COM_COMPRA_RECOMENDADA)),
+                "qtd": fmt_int(float(r.QTD_RECOMENDADA_ARM)),
+                "investimento": fmt_invest6(r.INVESTIMENTO_ESTIMADO_COM_CUSTO),
+                "cobertura": "sem pares" if pd.isna(r.COBERTURA_CUSTO_PARES_COMPRA_PCT) else fmt_pct(float(r.COBERTURA_CUSTO_PARES_COMPRA_PCT)),
+            })
+
+    loja_rows6 = []
+    lojas_visao6 = pd.concat(
+        [
+            e6_lojas[
+                (e6_lojas["UNIVERSO"] == "REDE_FISICA_SEM_LOJA93")
+                & (e6_lojas["QTD_RECOMENDADA_ARM"] > 0)
+            ].sort_values("QTD_RECOMENDADA_ARM", ascending=False).head(8),
+            e6_lojas[
+                (e6_lojas["UNIVERSO"] == "LOJA_93_ATACADO_B2B")
+                & (e6_lojas["QTD_RECOMENDADA_ARM"] > 0)
+            ].sort_values("QTD_RECOMENDADA_ARM", ascending=False).head(1),
+        ],
+        ignore_index=True,
+    )
+    for r in lojas_visao6.itertuples():
+        loja_rows6.append({
+            "universo": str(r.UNIVERSO),
+            "loja": str(int(r.COD_EMPRESA)),
+            "cidade": f"{r.CD_CIDADE}-{r.CD_ESTADO}",
+            "pares": fmt_int(float(r.PARES_COM_COMPRA_RECOMENDADA)),
+            "qtd": fmt_int(float(r.QTD_RECOMENDADA_ARM)),
+            "investimento": fmt_invest6(r.INVESTIMENTO_ESTIMADO_COM_CUSTO),
+        })
+
+    prio_rows6 = []
+    prio_visao6 = pd.concat(
+        [
+            e6_prio[e6_prio["UNIVERSO_OPERACIONAL"] == "REDE_FISICA_SEM_LOJA93"].head(12),
+            e6_prio[e6_prio["UNIVERSO_OPERACIONAL"] == "LOJA_93_ATACADO_B2B"].head(5),
+        ],
+        ignore_index=True,
+    )
+    for r in prio_visao6.itertuples():
+        prio_rows6.append({
+            "escopo": str(r.UNIVERSO_OPERACIONAL),
+            "rank": str(int(r.RANK_PRIORIDADE)),
+            "faixa": str(r.FAIXA_PRIORIDADE),
+            "loja": f"{int(r.COD_EMPRESA)} ({r.CD_CIDADE}-{r.CD_ESTADO})",
+            "codigo": str(int(r.CODIGO)),
+            "desc": str(r.DESCRICAO).strip(),
+            "qtd": fmt_int(float(r.QTD_RECOMENDADA_ARM)),
+            "investimento": fmt_invest6(r.INVESTIMENTO_ESTIMADO),
+            "status_orcamento": str(r.STATUS_ORCAMENTO),
+        })
+
+    audit_rows6 = [{
+        "risco": str(r.RISCO),
+        "controle": str(r.CONTROLE_APLICADO),
+        "evidencia": str(r.EVIDENCIA),
+        "risco_remanescente": str(r.RISCO_REMANESCENTE),
+    } for r in e6_audit.itertuples()]
+
+    etapa6 = {
+        "kpis": {
+            "pares_compra": fmt_int(float(tc6.PARES_COM_COMPRA_RECOMENDADA)),
+            "qtd_fisica": fmt_int(float(tf6.QTD_RECOMENDADA_ARM)),
+            "invest_fisica": fmt_milhao(float(tf6.INVESTIMENTO_ESTIMADO_COM_CUSTO)),
+            "cobertura_custo": fmt_pct(float(tc6.COBERTURA_CUSTO_PARES_COMPRA_PCT)),
+            "alta_fisica": fmt_int(alta_fis6),
+            "validacoes": f"{int((e6_valid['STATUS'] == 'OK').sum())}/{len(e6_valid)} OK",
+        },
+        "categorias": cat_rows6,
+        "lojas": loja_rows6,
+        "prioridades": prio_rows6,
+        "autoaudit": audit_rows6,
+    }
+
 DATA = {
     "kpis": kpis,
     "status_antes": status_antes,
@@ -1528,6 +1719,7 @@ DATA = {
     "etapa3": etapa3,
     "etapa4": etapa4,
     "etapa5": etapa5,
+    "etapa6": etapa6,
     "gerado_em": datetime.now().strftime("%d/%m/%Y %H:%M"),
 }
 
