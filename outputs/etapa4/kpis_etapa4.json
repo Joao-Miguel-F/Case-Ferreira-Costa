@@ -1,0 +1,62 @@
+{
+  "e4.cobertura.total_pares": {
+    "descricao": "Pares loja×produto na análise de cobertura — rede completa",
+    "fonte": "etapa4",
+    "unidade": "pares",
+    "valor": 28721
+  },
+  "e4.fisico.pares": {
+    "descricao": "Pares loja×produto — rede física",
+    "fonte": "etapa4",
+    "unidade": "pares",
+    "valor": 26395
+  },
+  "e4.ruptura_critico.completa.pares": {
+    "descricao": "Pares em ruptura/crítico — rede completa",
+    "fonte": "etapa4",
+    "unidade": "pares",
+    "valor": 26713
+  },
+  "e4.ruptura_critico.completa.pct": {
+    "descricao": "% de pares em ruptura/crítico — rede completa",
+    "fonte": "etapa4",
+    "unidade": "%",
+    "valor": 93.00859997910936
+  },
+  "e4.ruptura_critico.completa.receita": {
+    "descricao": "Receita histórica associada a ruptura/crítico — rede completa",
+    "fonte": "etapa4",
+    "unidade": "R$",
+    "valor": 464641938.47586906
+  },
+  "e4.ruptura_critico.fisico.pares": {
+    "descricao": "Pares em ruptura/crítico — rede física",
+    "fonte": "etapa4",
+    "unidade": "pares",
+    "valor": 24481
+  },
+  "e4.ruptura_critico.fisico.pct": {
+    "descricao": "% de pares em ruptura/crítico — rede física",
+    "fonte": "etapa4",
+    "unidade": "%",
+    "valor": 92.74862663383216
+  },
+  "e4.ruptura_critico.fisico.receita": {
+    "descricao": "Receita histórica associada a ruptura/crítico — rede física",
+    "fonte": "etapa4",
+    "unidade": "R$",
+    "valor": 316347573.28686714
+  },
+  "e4.validacoes.ok": {
+    "descricao": "Validações OK na Etapa 4",
+    "fonte": "etapa4",
+    "unidade": "checks",
+    "valor": 43
+  },
+  "e4.validacoes.total": {
+    "descricao": "Validações executadas na Etapa 4",
+    "fonte": "etapa4",
+    "unidade": "checks",
+    "valor": 43
+  }
+}

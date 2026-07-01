@@ -25,6 +25,7 @@ from pathlib import Path
 # Raiz do repositório resolvida a partir do arquivo (roda de qualquer diretório)
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
+from kpis import emit_kpis, kpi  # noqa: E402
 
 RAW       = ROOT / "data" / "raw"
 PROCESSED = ROOT / "data" / "processed"
@@ -75,6 +76,9 @@ compras["DATA_ENTRADA"] = pd.to_datetime(compras["DATA_ENTRADA"])
 # Justificativa: ausência de registro indica produto sem estoque naquela loja
 # no início do período. Tratar como 0 é conservador — gera alertas precoces
 # de ruptura, direção segura para o negócio.
+# Conta os nulos ANTES do fillna (KPI protegido: 1.329 registros, 5,2%).
+_estoque_total = int(len(estoque))
+_estoque_nulos = int(pd.to_numeric(estoque["ESTOQUE_INICIAL"], errors="coerce").isna().sum())
 estoque["ESTOQUE_INICIAL"] = pd.to_numeric(
     estoque["ESTOQUE_INICIAL"], errors="coerce"
 ).fillna(0)
@@ -198,6 +202,25 @@ assert 481e6 <= receita_total <= 484e6, \
 print(f"OK: integridade 0 orfaos | NIVEL_1/CD_CIDADE 0 nulos | "
       f"periodo {periodo_min.date()}..{periodo_max.date()} | {n_lojas} lojas | "
       f"receita R$ {receita_total/1e6:.1f}M")
+
+# ── SSOT de KPI (fonte única; ver src/kpis.py) ────────────────────────────────
+_compras_total = int(len(compras))
+_compras_sem_preco = int(compras["FLAG_SEM_PRECO"].sum())
+_orfaos = (len(codigos_vendas - codigos_dim)
+           + len(codigos_compras - codigos_dim)
+           + len(lojas_vendas - lojas_dim))
+emit_kpis("etapa1", {
+    "e1.receita_total": kpi(receita_total, "R$", "etapa1", "Receita total da rede completa (24 meses)"),
+    "e1.transacoes": kpi(int(len(vendas_enr)), "linhas", "etapa1", "Linhas de venda (proxy de transações)"),
+    "e1.skus_ativos": kpi(int(vendas_enr["CODIGO"].nunique()), "SKUs", "etapa1", "SKUs ativos (com venda no período)"),
+    "e1.lojas": kpi(int(n_lojas), "lojas", "etapa1", "Lojas na base (físicas + 92 + 93 atacado)"),
+    "e1.estoque_nulo.registros": kpi(_estoque_nulos, "reg", "etapa1", "Registros de estoque inicial sem valor (tratados como 0)"),
+    "e1.estoque_nulo.pct": kpi(_estoque_nulos / _estoque_total * 100, "%", "etapa1", "% de registros de estoque inicial sem valor"),
+    "e1.compras_sem_preco.registros": kpi(_compras_sem_preco, "linhas", "etapa1", "Linhas de compra sem preço (excluídas do CMV)"),
+    "e1.compras_sem_preco.pct": kpi(_compras_sem_preco / _compras_total * 100, "%", "etapa1", "% de linhas de compra sem preço"),
+    "e1.integridade.orfaos": kpi(int(_orfaos), "regs", "etapa1", "Órfãos de integridade referencial (vendas/compras sem dimensão)"),
+    "e1.integridade.nulos_dimensoes": kpi(int(n_nulos_nivel1 + n_nulos_cidade), "regs", "etapa1", "Nulos em NIVEL_1/CD_CIDADE após o join"),
+})
 
 # =============================================================================
 # 5. SALVAR BASES TRATADAS

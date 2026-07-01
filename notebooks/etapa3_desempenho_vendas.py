@@ -60,6 +60,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from utils import LOJA_ATACADO, OUTPUTS, load_vendas  # noqa: E402
+from kpis import emit_kpis, kpi  # noqa: E402
 
 
 OUT = OUTPUTS / "etapa3"
@@ -685,6 +686,40 @@ def salvar_csv(df: pd.DataFrame, nome: str) -> None:
     df.to_csv(OUT / nome, index=False, encoding="utf-8-sig", float_format="%.6f")
 
 
+def construir_kpis(vendas, impacto_loja93, ranking_receita, validacoes):
+    """KPIs da Etapa 3 (SSOT) — mesmas expressões narradas em gerar_resumo, coletadas
+    para outputs/etapa3/kpis_etapa3.json. Ver src/kpis.py."""
+    totais_full = metricas_totais(vendas)
+    vendas_fisica = vendas[vendas["COD_EMPRESA"] != LOJA_ATACADO]
+    totais_fisica = metricas_totais(vendas_fisica)
+    loja93 = impacto_loja93[impacto_loja93["SEGMENTO"] == "LOJA_93_ATACADO_B2B"].iloc[0]
+    yoy_full = vendas.groupby("ANO")["RECEITA"].sum().reindex([2024, 2025], fill_value=0)
+    yoy_fis = vendas_fisica.groupby("ANO")["RECEITA"].sum().reindex([2024, 2025], fill_value=0)
+    var_full = (yoy_full.loc[2025] - yoy_full.loc[2024]) / yoy_full.loc[2024] * 100
+    var_fis = (yoy_fis.loc[2025] - yoy_fis.loc[2024]) / yoy_fis.loc[2024] * 100
+    abc = (ranking_receita.groupby(["UNIVERSO", "CURVA_ABC_RECEITA"])
+           .agg(SKUS=("CODIGO", "nunique"), RECEITA=("RECEITA", "sum")).reset_index())
+    abc_full_a = abc[(abc["UNIVERSO"] == UNIVERSO_COMPLETO) & (abc["CURVA_ABC_RECEITA"] == "A")].iloc[0]
+    abc_fis_a = abc[(abc["UNIVERSO"] == UNIVERSO_FISICO) & (abc["CURVA_ABC_RECEITA"] == "A")].iloc[0]
+    return {
+        "e3.receita.rede_completa": kpi(float(totais_full["RECEITA"]), "R$", "etapa3", "Receita total — rede completa"),
+        "e3.transacoes.rede_completa": kpi(int(totais_full["TRANSACOES"]), "linhas", "etapa3", "Linhas de venda (proxy de transações) — rede completa"),
+        "e3.skus_ativos.rede_completa": kpi(int(totais_full["SKUS_ATIVOS"]), "SKUs", "etapa3", "SKUs ativos — rede completa"),
+        "e3.receita.rede_fisica": kpi(float(totais_fisica["RECEITA"]), "R$", "etapa3", "Receita total — rede física (sem Loja 93)"),
+        "e3.transacoes.rede_fisica": kpi(int(totais_fisica["TRANSACOES"]), "linhas", "etapa3", "Linhas de venda — rede física"),
+        "e3.loja93.receita_pct": kpi(float(loja93["PARTICIPACAO_RECEITA_REDE_COMPLETA_PCT"]), "%", "etapa3", "Participação da Loja 93 na receita da rede completa"),
+        "e3.loja93.transacoes_pct": kpi(float(loja93["PARTICIPACAO_TRANSACOES_REDE_COMPLETA_PCT"]), "%", "etapa3", "Participação da Loja 93 nas linhas de venda"),
+        "e3.loja93.receita_media_linha": kpi(float(loja93["TICKET_MEDIO_TRANSACAO"]), "R$", "etapa3", "Receita média por linha de venda — Loja 93"),
+        "e3.curva_a.completa": kpi(int(abc_full_a["SKUS"]), "SKUs", "etapa3", "SKUs na curva A — rede completa"),
+        "e3.curva_a.pct_completa": kpi(float(abc_full_a["RECEITA"] / totais_full["RECEITA"] * 100), "%", "etapa3", "% da receita concentrada na curva A — rede completa"),
+        "e3.curva_a.fisica": kpi(int(abc_fis_a["SKUS"]), "SKUs", "etapa3", "SKUs na curva A — rede física"),
+        "e3.queda_2025.completa": kpi(float(var_full), "%", "etapa3", "Variação de receita 2025 vs 2024 — rede completa"),
+        "e3.queda_2025.fisica": kpi(float(var_fis), "%", "etapa3", "Variação de receita 2025 vs 2024 — rede física"),
+        "e3.validacoes.total": kpi(len(validacoes), "checks", "etapa3", "Validações executadas na Etapa 3"),
+        "e3.validacoes.ok": kpi(int((validacoes["STATUS"] == "OK").sum()), "checks", "etapa3", "Validações OK na Etapa 3"),
+    }
+
+
 def gerar_resumo(
     vendas: pd.DataFrame,
     impacto_loja93: pd.DataFrame,
@@ -892,6 +927,9 @@ def main() -> None:
     salvar_csv(notas_metodologicas, "notas_metodologicas.csv")
     salvar_csv(recomendacoes_melhoria, "recomendacoes_melhoria.csv")
     salvar_csv(validacoes, "validacoes_etapa3.csv")
+
+    # ── SSOT de KPI (fonte única; ver src/kpis.py) ────────────────────────────
+    emit_kpis("etapa3", construir_kpis(vendas, impacto_loja93, ranking_receita, validacoes))
 
     resumo = gerar_resumo(
         vendas,

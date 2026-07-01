@@ -1,0 +1,74 @@
+{
+  "e6.cobertura_custo.pct_completa": {
+    "descricao": "Cobertura de custo dos pares recomendados — rede completa",
+    "fonte": "etapa6",
+    "unidade": "%",
+    "valor": 9.672348577884756
+  },
+  "e6.investimento.loja93": {
+    "descricao": "Investimento conhecido (com custo) — Loja 93/B2B",
+    "fonte": "etapa6",
+    "unidade": "R$",
+    "valor": 2054067.5832
+  },
+  "e6.investimento.rede_fisica": {
+    "descricao": "Investimento conhecido (com custo) — rede física",
+    "fonte": "etapa6",
+    "unidade": "R$",
+    "valor": 5665536.435971
+  },
+  "e6.pares.loja93": {
+    "descricao": "Pares recomendados — Loja 93/B2B",
+    "fonte": "etapa6",
+    "unidade": "pares",
+    "valor": 296
+  },
+  "e6.pares.rede_completa": {
+    "descricao": "Pares loja×SKU com compra recomendada — rede completa",
+    "fonte": "etapa6",
+    "unidade": "pares",
+    "valor": 20357
+  },
+  "e6.pares.rede_fisica": {
+    "descricao": "Pares recomendados — rede física",
+    "fonte": "etapa6",
+    "unidade": "pares",
+    "valor": 20061
+  },
+  "e6.prioridade_alta.rede_fisica": {
+    "descricao": "Pares de prioridade ALTA — rede física",
+    "fonte": "etapa6",
+    "unidade": "pares",
+    "valor": 2007
+  },
+  "e6.unidades.loja93": {
+    "descricao": "Unidades recomendadas — Loja 93/B2B",
+    "fonte": "etapa6",
+    "unidade": "un",
+    "valor": 26265.0
+  },
+  "e6.unidades.rede_completa": {
+    "descricao": "Unidades de armazenagem recomendadas — rede completa",
+    "fonte": "etapa6",
+    "unidade": "un",
+    "valor": 1019914.0
+  },
+  "e6.unidades.rede_fisica": {
+    "descricao": "Unidades recomendadas — rede física",
+    "fonte": "etapa6",
+    "unidade": "un",
+    "valor": 993649.0
+  },
+  "e6.validacoes.ok": {
+    "descricao": "Validações OK na Etapa 6",
+    "fonte": "etapa6",
+    "unidade": "checks",
+    "valor": 18
+  },
+  "e6.validacoes.total": {
+    "descricao": "Validações executadas na Etapa 6",
+    "fonte": "etapa6",
+    "unidade": "checks",
+    "valor": 18
+  }
+}

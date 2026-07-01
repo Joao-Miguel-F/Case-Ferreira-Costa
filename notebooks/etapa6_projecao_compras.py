@@ -70,6 +70,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from utils import LOJA_ATACADO, OUTPUTS, PROCESSED, load_vendas  # noqa: E402
+from kpis import emit_kpis, kpi  # noqa: E402
 
 
 OUT = OUTPUTS / "etapa6"
@@ -706,6 +707,28 @@ def gerar_recomendacoes_melhoria() -> pd.DataFrame:
     )
 
 
+def construir_kpis(total, priorizacao, validacoes):
+    """KPIs da Etapa 6 (SSOT) — mesmas expressões narradas em gerar_resumo. Ver src/kpis.py."""
+    full = total[total["UNIVERSO"] == UNIVERSO_COMPLETO].iloc[0]
+    fis = total[total["UNIVERSO"] == UNIVERSO_FISICO].iloc[0]
+    l93 = total[total["UNIVERSO"] == ESCOPO_LOJA93].iloc[0]
+    alta_fis = priorizacao[(priorizacao["UNIVERSO_OPERACIONAL"] == UNIVERSO_FISICO) & (priorizacao["FAIXA_PRIORIDADE"] == "ALTA")]
+    return {
+        "e6.pares.rede_completa": kpi(int(full["PARES_COM_COMPRA_RECOMENDADA"]), "pares", "etapa6", "Pares loja×SKU com compra recomendada — rede completa"),
+        "e6.unidades.rede_completa": kpi(float(full["QTD_RECOMENDADA_ARM"]), "un", "etapa6", "Unidades de armazenagem recomendadas — rede completa"),
+        "e6.pares.rede_fisica": kpi(int(fis["PARES_COM_COMPRA_RECOMENDADA"]), "pares", "etapa6", "Pares recomendados — rede física"),
+        "e6.unidades.rede_fisica": kpi(float(fis["QTD_RECOMENDADA_ARM"]), "un", "etapa6", "Unidades recomendadas — rede física"),
+        "e6.investimento.rede_fisica": kpi(float(fis["INVESTIMENTO_ESTIMADO_COM_CUSTO"]), "R$", "etapa6", "Investimento conhecido (com custo) — rede física"),
+        "e6.pares.loja93": kpi(int(l93["PARES_COM_COMPRA_RECOMENDADA"]), "pares", "etapa6", "Pares recomendados — Loja 93/B2B"),
+        "e6.unidades.loja93": kpi(float(l93["QTD_RECOMENDADA_ARM"]), "un", "etapa6", "Unidades recomendadas — Loja 93/B2B"),
+        "e6.investimento.loja93": kpi(float(l93["INVESTIMENTO_ESTIMADO_COM_CUSTO"]), "R$", "etapa6", "Investimento conhecido (com custo) — Loja 93/B2B"),
+        "e6.cobertura_custo.pct_completa": kpi(float(full["COBERTURA_CUSTO_PARES_COMPRA_PCT"]), "%", "etapa6", "Cobertura de custo dos pares recomendados — rede completa"),
+        "e6.prioridade_alta.rede_fisica": kpi(int(len(alta_fis)), "pares", "etapa6", "Pares de prioridade ALTA — rede física"),
+        "e6.validacoes.total": kpi(len(validacoes), "checks", "etapa6", "Validações executadas na Etapa 6"),
+        "e6.validacoes.ok": kpi(int((validacoes["STATUS"] == "OK").sum()), "checks", "etapa6", "Validações OK na Etapa 6"),
+    }
+
+
 def gerar_resumo(total: pd.DataFrame, categorias: pd.DataFrame, lojas: pd.DataFrame, priorizacao: pd.DataFrame, autoaudit: pd.DataFrame, validacoes: pd.DataFrame) -> str:
     full = total[total["UNIVERSO"] == UNIVERSO_COMPLETO].iloc[0]
     fis = total[total["UNIVERSO"] == UNIVERSO_FISICO].iloc[0]
@@ -909,6 +932,9 @@ def main() -> None:
     salvar_csv(recomendacoes, "recomendacoes_melhoria.csv")
     salvar_csv(validacoes, "validacoes_etapa6.csv")
     salvar_csv(autoaudit, "autoaudit_etapa6.csv")
+
+    # ── SSOT de KPI (fonte única; ver src/kpis.py) ────────────────────────────
+    emit_kpis("etapa6", construir_kpis(total, priorizacao, validacoes))
 
     (OUT / "resumo_etapa6.md").write_text(
         gerar_resumo(total, categorias, lojas, priorizacao, autoaudit, validacoes),

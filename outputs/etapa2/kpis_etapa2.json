@@ -1,0 +1,56 @@
+{
+  "e2.cobertura.total_pares": {
+    "descricao": "Pares loja×produto no snapshot de cobertura (dez/2025)",
+    "fonte": "etapa2",
+    "unidade": "pares",
+    "valor": 28721
+  },
+  "e2.ruptura.pares": {
+    "descricao": "Pares em ruptura (estoque projetado ≤ 0)",
+    "fonte": "etapa2",
+    "unidade": "pares",
+    "valor": 26140
+  },
+  "e2.ruptura.pct": {
+    "descricao": "% de pares em ruptura",
+    "fonte": "etapa2",
+    "unidade": "%",
+    "valor": 91.01354409665402
+  },
+  "e2.ruptura_critico.pares": {
+    "descricao": "Pares em ruptura ou crítico",
+    "fonte": "etapa2",
+    "unidade": "pares",
+    "valor": 26713
+  },
+  "e2.ruptura_critico.pct": {
+    "descricao": "% de pares em ruptura ou crítico",
+    "fonte": "etapa2",
+    "unidade": "%",
+    "valor": 93.00859997910936
+  },
+  "e2.status.atencao": {
+    "descricao": "Pares em status ATENÇÃO (31–90 dias)",
+    "fonte": "etapa2",
+    "unidade": "pares",
+    "valor": 391
+  },
+  "e2.status.critico": {
+    "descricao": "Pares em status CRÍTICO (1–30 dias de cobertura)",
+    "fonte": "etapa2",
+    "unidade": "pares",
+    "valor": 573
+  },
+  "e2.status.saudavel": {
+    "descricao": "Pares em status SAUDÁVEL (>90 dias)",
+    "fonte": "etapa2",
+    "unidade": "pares",
+    "valor": 955
+  },
+  "e2.status.sem_venda": {
+    "descricao": "Pares SEM VENDA (capital imobilizado)",
+    "fonte": "etapa2",
+    "unidade": "pares",
+    "valor": 662
+  }
+}

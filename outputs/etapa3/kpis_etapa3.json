@@ -1,0 +1,92 @@
+{
+  "e3.curva_a.completa": {
+    "descricao": "SKUs na curva A — rede completa",
+    "fonte": "etapa3",
+    "unidade": "SKUs",
+    "valor": 522
+  },
+  "e3.curva_a.fisica": {
+    "descricao": "SKUs na curva A — rede física",
+    "fonte": "etapa3",
+    "unidade": "SKUs",
+    "valor": 713
+  },
+  "e3.curva_a.pct_completa": {
+    "descricao": "% da receita concentrada na curva A — rede completa",
+    "fonte": "etapa3",
+    "unidade": "%",
+    "valor": 79.98717787805512
+  },
+  "e3.loja93.receita_media_linha": {
+    "descricao": "Receita média por linha de venda — Loja 93",
+    "fonte": "etapa3",
+    "unidade": "R$",
+    "valor": 6160.068825026571
+  },
+  "e3.loja93.receita_pct": {
+    "descricao": "Participação da Loja 93 na receita da rede completa",
+    "fonte": "etapa3",
+    "unidade": "%",
+    "valor": 31.76704453101833
+  },
+  "e3.loja93.transacoes_pct": {
+    "descricao": "Participação da Loja 93 nas linhas de venda",
+    "fonte": "etapa3",
+    "unidade": "%",
+    "valor": 2.282027531433707
+  },
+  "e3.queda_2025.completa": {
+    "descricao": "Variação de receita 2025 vs 2024 — rede completa",
+    "fonte": "etapa3",
+    "unidade": "%",
+    "valor": -54.16270409406002
+  },
+  "e3.queda_2025.fisica": {
+    "descricao": "Variação de receita 2025 vs 2024 — rede física",
+    "fonte": "etapa3",
+    "unidade": "%",
+    "valor": -47.60415301714983
+  },
+  "e3.receita.rede_completa": {
+    "descricao": "Receita total — rede completa",
+    "fonte": "etapa3",
+    "unidade": "R$",
+    "valor": 482515748.11584336
+  },
+  "e3.receita.rede_fisica": {
+    "descricao": "Receita total — rede física (sem Loja 93)",
+    "fonte": "etapa3",
+    "unidade": "R$",
+    "valor": 329234755.5427072
+  },
+  "e3.skus_ativos.rede_completa": {
+    "descricao": "SKUs ativos — rede completa",
+    "fonte": "etapa3",
+    "unidade": "SKUs",
+    "valor": 2729
+  },
+  "e3.transacoes.rede_completa": {
+    "descricao": "Linhas de venda (proxy de transações) — rede completa",
+    "fonte": "etapa3",
+    "unidade": "linhas",
+    "valor": 1090390
+  },
+  "e3.transacoes.rede_fisica": {
+    "descricao": "Linhas de venda — rede física",
+    "fonte": "etapa3",
+    "unidade": "linhas",
+    "valor": 1065507
+  },
+  "e3.validacoes.ok": {
+    "descricao": "Validações OK na Etapa 3",
+    "fonte": "etapa3",
+    "unidade": "checks",
+    "valor": 60
+  },
+  "e3.validacoes.total": {
+    "descricao": "Validações executadas na Etapa 3",
+    "fonte": "etapa3",
+    "unidade": "checks",
+    "valor": 60
+  }
+}

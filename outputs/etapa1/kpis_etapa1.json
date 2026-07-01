@@ -1,0 +1,62 @@
+{
+  "e1.compras_sem_preco.pct": {
+    "descricao": "% de linhas de compra sem preço",
+    "fonte": "etapa1",
+    "unidade": "%",
+    "valor": 9.475951184493898
+  },
+  "e1.compras_sem_preco.registros": {
+    "descricao": "Linhas de compra sem preço (excluídas do CMV)",
+    "fonte": "etapa1",
+    "unidade": "linhas",
+    "valor": 132
+  },
+  "e1.estoque_nulo.pct": {
+    "descricao": "% de registros de estoque inicial sem valor",
+    "fonte": "etapa1",
+    "unidade": "%",
+    "valor": 5.246742992499013
+  },
+  "e1.estoque_nulo.registros": {
+    "descricao": "Registros de estoque inicial sem valor (tratados como 0)",
+    "fonte": "etapa1",
+    "unidade": "reg",
+    "valor": 1329
+  },
+  "e1.integridade.nulos_dimensoes": {
+    "descricao": "Nulos em NIVEL_1/CD_CIDADE após o join",
+    "fonte": "etapa1",
+    "unidade": "regs",
+    "valor": 0
+  },
+  "e1.integridade.orfaos": {
+    "descricao": "Órfãos de integridade referencial (vendas/compras sem dimensão)",
+    "fonte": "etapa1",
+    "unidade": "regs",
+    "valor": 0
+  },
+  "e1.lojas": {
+    "descricao": "Lojas na base (físicas + 92 + 93 atacado)",
+    "fonte": "etapa1",
+    "unidade": "lojas",
+    "valor": 11
+  },
+  "e1.receita_total": {
+    "descricao": "Receita total da rede completa (24 meses)",
+    "fonte": "etapa1",
+    "unidade": "R$",
+    "valor": 482515748.11584336
+  },
+  "e1.skus_ativos": {
+    "descricao": "SKUs ativos (com venda no período)",
+    "fonte": "etapa1",
+    "unidade": "SKUs",
+    "valor": 2729
+  },
+  "e1.transacoes": {
+    "descricao": "Linhas de venda (proxy de transações)",
+    "fonte": "etapa1",
+    "unidade": "linhas",
+    "valor": 1090390
+  }
+}

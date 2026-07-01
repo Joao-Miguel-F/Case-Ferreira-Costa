@@ -76,6 +76,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from utils import (PROCESSED, OUTPUTS, LOJA_ATACADO,
                    load_vendas, load_compras, load_estoque_inicial,
                    load_dim_produto, load_dim_lojas)
+from kpis import emit_kpis, kpi
 
 OUT = OUTPUTS / "etapa2"
 OUT.mkdir(parents=True, exist_ok=True)
@@ -369,6 +370,24 @@ df.to_parquet(PROCESSED / "estoque_projetado.parquet",    index=False)
 cobertura.to_parquet(PROCESSED / "cobertura_estoque.parquet", index=False)
 cobertura.to_csv(OUT / "cobertura_estoque.csv",            index=False, encoding="utf-8-sig")
 investigacao.to_csv(OUT / "investigacao_outliers_preco.csv", index=False, encoding="utf-8-sig")
+
+# ── SSOT de KPI (fonte única; ver src/kpis.py) ────────────────────────────────
+_total_pares = int(len(cobertura))
+_sc = cobertura["STATUS_ESTOQUE"].value_counts()
+_ruptura = int(_sc.get("EM RUPTURA", 0))
+_critico = int(_sc.get("CRÍTICO", 0))
+_ruptura_critico = _ruptura + _critico
+emit_kpis("etapa2", {
+    "e2.cobertura.total_pares": kpi(_total_pares, "pares", "etapa2", "Pares loja×produto no snapshot de cobertura (dez/2025)"),
+    "e2.ruptura.pares": kpi(_ruptura, "pares", "etapa2", "Pares em ruptura (estoque projetado ≤ 0)"),
+    "e2.ruptura.pct": kpi(_ruptura / _total_pares * 100, "%", "etapa2", "% de pares em ruptura"),
+    "e2.status.critico": kpi(_critico, "pares", "etapa2", "Pares em status CRÍTICO (1–30 dias de cobertura)"),
+    "e2.status.atencao": kpi(int(_sc.get("ATENÇÃO", 0)), "pares", "etapa2", "Pares em status ATENÇÃO (31–90 dias)"),
+    "e2.status.saudavel": kpi(int(_sc.get("SAUDÁVEL", 0)), "pares", "etapa2", "Pares em status SAUDÁVEL (>90 dias)"),
+    "e2.status.sem_venda": kpi(int(_sc.get("SEM VENDA", 0)), "pares", "etapa2", "Pares SEM VENDA (capital imobilizado)"),
+    "e2.ruptura_critico.pares": kpi(_ruptura_critico, "pares", "etapa2", "Pares em ruptura ou crítico"),
+    "e2.ruptura_critico.pct": kpi(_ruptura_critico / _total_pares * 100, "%", "etapa2", "% de pares em ruptura ou crítico"),
+})
 
 print("\n[OK] Arquivos salvos:")
 print(f"  data/processed/estoque_projetado.parquet  ({len(df):,} linhas)")

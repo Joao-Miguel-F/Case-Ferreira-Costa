@@ -81,6 +81,7 @@ from utils import (  # noqa: E402
     load_dim_produto,
     load_vendas,
 )
+from kpis import emit_kpis, kpi  # noqa: E402
 
 
 OUT = OUTPUTS / "etapa5"
@@ -720,9 +721,58 @@ def salvar_csv(df: pd.DataFrame, nome: str) -> None:
 
 
 # ── Resumo executivo e documentacao tecnica ───────────────────────────────────
+def construir_kpis(total_completo, total_fisico, total_loja93, margem_sku,
+                   precos_desc, dispersao, candidatos, validacoes, n_skus_compra, naive_amp):
+    """Monta o dicionário de KPIs da Etapa 5 (SSOT) a partir dos valores já
+    calculados — nenhum número novo, apenas a coleta canônica para outputs/etapa5/
+    kpis_etapa5.json e para o resumo/README/dashboard consumirem uma fonte única."""
+    tc, tf, tl = total_completo.iloc[0], total_fisico.iloc[0], total_loja93.iloc[0]
+
+    def n_acima_lista(universo):
+        s = precos_desc[(precos_desc["UNIVERSO"] == universo) & precos_desc["DESCONTO_EFETIVO_PCT"].notna()]
+        return int((s["DESCONTO_EFETIVO_PCT"].round(2) < 0).sum())
+
+    desc_fis = precos_desc[(precos_desc["UNIVERSO"] == UNIVERSO_FISICO) & precos_desc["DESCONTO_EFETIVO_PCT"].notna()]
+    desc_medio_fis = float(np.average(desc_fis["DESCONTO_EFETIVO_PCT"], weights=desc_fis["RECEITA"]))
+    disp_fis = dispersao[(dispersao["UNIVERSO"] == UNIVERSO_FISICO) & (dispersao["EMBALAGEM"] == 0)]
+    disp_cv_alta = int((disp_fis["CV_PRECO"] > 0.30).sum())
+    cand_fis = candidatos[candidatos["UNIVERSO"] == UNIVERSO_FISICO]
+    cand_alta = int((cand_fis["FAIXA_PRIORIDADE"] == "ALTA").sum())
+    margem_neg = int(margem_sku[margem_sku["UNIVERSO"] == UNIVERSO_FISICO]["FLAG_MARGEM_NEGATIVA"].sum())
+
+    return {
+        "e5.skus_vendidos": kpi(int(tc["SKUS"]), "SKUs", "etapa5", "SKUs vendidos (rede completa)"),
+        "e5.cobertura_custo.skus_com_compra": kpi(n_skus_compra, "SKUs", "etapa5", "SKUs com compra registrada no período"),
+        "e5.cobertura_custo.skus_com_custo": kpi(int(tc["SKUS_COM_CUSTO"]), "SKUs", "etapa5", "SKUs com preço de compra válido (custo auditável)"),
+        "e5.cobertura_custo.receita_completa": kpi(float(tc["RECEITA_COM_CUSTO"]), "R$", "etapa5", "Receita coberta por custo — rede completa"),
+        "e5.cobertura_custo.pct_completa": kpi(float(tc["COBERTURA_CUSTO_RECEITA_PCT"]), "%", "etapa5", "Cobertura de custo (% receita) — rede completa"),
+        "e5.cobertura_custo.receita_fisica": kpi(float(tf["RECEITA_COM_CUSTO"]), "R$", "etapa5", "Receita coberta por custo — rede física"),
+        "e5.cobertura_custo.pct_fisica": kpi(float(tf["COBERTURA_CUSTO_RECEITA_PCT"]), "%", "etapa5", "Cobertura de custo (% receita) — rede física"),
+        "e5.cobertura_custo.receita_loja93": kpi(float(tl["RECEITA_COM_CUSTO"]), "R$", "etapa5", "Receita coberta por custo — Loja 93/B2B"),
+        "e5.cobertura_custo.pct_loja93": kpi(float(tl["COBERTURA_CUSTO_RECEITA_PCT"]), "%", "etapa5", "Cobertura de custo (% receita) — Loja 93/B2B"),
+        "e5.margem.rede_completa": kpi(float(tc["MARGEM_BRUTA_PCT"]), "%", "etapa5", "Margem bruta % ponderada (itens com custo) — rede completa"),
+        "e5.margem.rede_fisica": kpi(float(tf["MARGEM_BRUTA_PCT"]), "%", "etapa5", "Margem bruta % ponderada (itens com custo) — rede física"),
+        "e5.margem.loja93": kpi(float(tl["MARGEM_BRUTA_PCT"]), "%", "etapa5", "Margem bruta % ponderada (itens com custo) — Loja 93/B2B"),
+        "e5.markup.rede_completa": kpi(float(tc["MARKUP_PONDERADO"]), "x", "etapa5", "Markup ponderado — rede completa"),
+        "e5.markup.rede_fisica": kpi(float(tf["MARKUP_PONDERADO"]), "x", "etapa5", "Markup ponderado — rede física"),
+        "e5.skus_margem_negativa.rede_fisica": kpi(margem_neg, "SKUs", "etapa5", "SKUs com margem negativa (preço < custo) — rede física"),
+        "e5.desconto.rede_fisica": kpi(desc_medio_fis, "%", "etapa5", "Desconto efetivo médio ponderado — rede física"),
+        "e5.acima_lista.rede_completa": kpi(n_acima_lista(UNIVERSO_COMPLETO), "comb", "etapa5", "Combinações loja×produto×embalagem acima da lista — rede completa"),
+        "e5.acima_lista.rede_fisica": kpi(n_acima_lista(UNIVERSO_FISICO), "comb", "etapa5", "Combinações loja×produto×embalagem acima da lista — rede física"),
+        "e5.acima_lista.loja93": kpi(n_acima_lista(ESCOPO_LOJA93), "comb", "etapa5", "Combinações acima da lista — Loja 93/B2B"),
+        "e5.dispersao.cv_alta_fisica": kpi(disp_cv_alta, "SKUs", "etapa5", "SKUs com CV de preço >30% (rede física, embalagem 0)"),
+        "e5.naive.amplitude": kpi(int(naive_amp), "SKUs", "etapa5", "Leitura ingênua: SKUs com amplitude de preço bruto >30%"),
+        "e5.candidatos.rede_fisica": kpi(len(cand_fis), "comb", "etapa5", "Candidatos a repricing — rede física"),
+        "e5.candidatos.alta_fisica": kpi(cand_alta, "comb", "etapa5", "Candidatos a repricing de prioridade ALTA — rede física"),
+        "e5.validacoes.total": kpi(len(validacoes), "checks", "etapa5", "Validações executadas na Etapa 5"),
+        "e5.validacoes.ok": kpi(int((validacoes["STATUS"] == "OK").sum()), "checks", "etapa5", "Validações com status OK na Etapa 5"),
+    }
+
+
 def gerar_resumo(
     total_completo, total_fisico, total_loja93, categorias_n1, lojas, margem_sku,
     precos_desc, dispersao, candidatos, autoaudit, validacoes, n_skus_compra, naive_amp,
+    kpis,
 ):
     tc = total_completo.iloc[0]
     tf = total_fisico.iloc[0]
@@ -752,17 +802,15 @@ def gerar_resumo(
     pior_sku = sku_alta.sort_values("MARGEM_BRUTA_PCT").iloc[0]
     melhor_sku = sku_alta.sort_values("MARGEM_BRUTA_PCT", ascending=False).iloc[0]
 
-    desc_fis = precos_desc[(precos_desc["UNIVERSO"] == UNIVERSO_FISICO) & precos_desc["DESCONTO_EFETIVO_PCT"].notna()]
-    desc_medio = float(np.average(desc_fis["DESCONTO_EFETIVO_PCT"], weights=desc_fis["RECEITA"]))
-    # Mesma definicao da FLAG_PRECO_ACIMA_LISTA (round(2) < 0): descarta empates de
-    # fronteira (preco == lista) e conta so o que esta estritamente acima da lista.
-    n_acima_lista = int((desc_fis["DESCONTO_EFETIVO_PCT"].round(2) < 0).sum())
+    # Escalares derivados vêm do SSOT (construir_kpis) — calculados uma única vez.
+    # (Mesma definicao da FLAG_PRECO_ACIMA_LISTA: round(2) < 0, estritamente acima.)
+    desc_medio = kpis["e5.desconto.rede_fisica"]["valor"]
+    n_acima_lista = kpis["e5.acima_lista.rede_fisica"]["valor"]
 
     cand_fis = candidatos[candidatos["UNIVERSO"] == UNIVERSO_FISICO]
     top_imp = cand_fis.sort_values("IMPACTO_FINANCEIRO_ESTIMADO", ascending=False).iloc[0]
 
-    disp_fis = dispersao[(dispersao["UNIVERSO"] == UNIVERSO_FISICO) & (dispersao["EMBALAGEM"] == 0)]
-    disp_alta = int((disp_fis["CV_PRECO"] > 0.30).sum())
+    disp_alta = kpis["e5.dispersao.cv_alta_fisica"]["valor"]
 
     aud_unidade = autoaudit.iloc[0]
     aud_vazamento = autoaudit.iloc[1]
@@ -822,7 +870,7 @@ e o analogo do achado das Etapas 1/2 ("88% vendem sem compra registrada"):
   com {fmt_pct(pior_sku['MARGEM_BRUTA_PCT'])}; a maior e do SKU
   {int(melhor_sku['CODIGO'])} ({str(melhor_sku['DESCRICAO']).strip()}), com
   {fmt_pct(melhor_sku['MARGEM_BRUTA_PCT'])}.
-- {int(margem_sku[margem_sku['UNIVERSO'] == UNIVERSO_FISICO]['FLAG_MARGEM_NEGATIVA'].sum())} SKUs
+- {kpis['e5.skus_margem_negativa.rede_fisica']['valor']} SKUs
   da rede fisica vendem com margem negativa (preco < custo), concentrados em
   utilidades domesticas/loucas de baixo giro - sinalizados, nao silenciados.
 - Desconto efetivo medio ponderado na rede fisica: {fmt_pct(desc_medio)}.
@@ -832,7 +880,7 @@ e o analogo do achado das Etapas 1/2 ("88% vendem sem compra registrada"):
   {fmt_num(disp_alta)} SKUs com CV>30% - bem abaixo da leitura ingenua de
   {fmt_num(naive_amp)} SKUs com amplitude de preco bruto >30% (metrica diferente:
   amplitude do preco bruto entre linhas, misturando embalagem e atacado).
-- Candidatos a repricing na rede fisica: {fmt_num(len(cand_fis))} combinacoes
+- Candidatos a repricing na rede fisica: {fmt_num(kpis['e5.candidatos.rede_fisica']['valor'])} combinacoes
   loja x produto x embalagem com pelo menos um sinal (margem baixa/negativa,
   desconto alto ou preco fora da faixa). Dois rankings convivem: **risco**
   (nº de sinais + receita, para triagem) e **impacto** (receita x magnitude do
@@ -1065,8 +1113,15 @@ def main() -> None:
     total_fisico = total[total["UNIVERSO"] == UNIVERSO_FISICO].reset_index(drop=True)
     total_loja93 = total[total["UNIVERSO"] == ESCOPO_LOJA93].reset_index(drop=True)
     n_skus_compra = int(compras["CODIGO"].nunique())
+
+    # ── SSOT de KPI (fonte única; ver src/kpis.py) ────────────────────────────
+    kpis = construir_kpis(total_completo, total_fisico, total_loja93, margem_sku,
+                          precos_desc, dispersao, candidatos, validacoes, n_skus_compra, naive_amp)
+    emit_kpis("etapa5", kpis)
+
     resumo = gerar_resumo(total_completo, total_fisico, total_loja93, categorias_n1, lojas, margem_sku,
-                          precos_desc, dispersao, candidatos, autoaudit, validacoes, n_skus_compra, naive_amp)
+                          precos_desc, dispersao, candidatos, autoaudit, validacoes, n_skus_compra, naive_amp,
+                          kpis)
     (OUT / "resumo_etapa5.md").write_text(resumo, encoding="utf-8")
     (OUT / "documentacao_tecnica_etapa5.md").write_text(gerar_documentacao_tecnica(), encoding="utf-8")
     salvar_csv(total, "margem_total_universo.csv")

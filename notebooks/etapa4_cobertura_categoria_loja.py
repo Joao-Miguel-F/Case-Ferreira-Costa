@@ -68,6 +68,7 @@ from utils import (  # noqa: E402
     load_dim_produto,
     load_vendas,
 )
+from kpis import emit_kpis, kpi  # noqa: E402
 
 
 OUT = OUTPUTS / "etapa4"
@@ -632,6 +633,26 @@ def salvar_csv(df: pd.DataFrame, nome: str) -> None:
     df.to_csv(OUT / nome, index=False, encoding="utf-8-sig", float_format="%.6f")
 
 
+def construir_kpis(cobertura, validacoes):
+    """KPIs da Etapa 4 (SSOT) — mesmas expressões narradas em gerar_resumo. Ver src/kpis.py."""
+    total_pares = int(len(cobertura))
+    fisico = cobertura[cobertura["COD_EMPRESA"] != LOJA_ATACADO]
+    risco_total = cobertura[cobertura["STATUS_ESTOQUE"].isin(STATUS_RISCO)]
+    risco_fisico = fisico[fisico["STATUS_ESTOQUE"].isin(STATUS_RISCO)]
+    return {
+        "e4.cobertura.total_pares": kpi(total_pares, "pares", "etapa4", "Pares loja×produto na análise de cobertura — rede completa"),
+        "e4.fisico.pares": kpi(int(len(fisico)), "pares", "etapa4", "Pares loja×produto — rede física"),
+        "e4.ruptura_critico.completa.pares": kpi(int(len(risco_total)), "pares", "etapa4", "Pares em ruptura/crítico — rede completa"),
+        "e4.ruptura_critico.completa.pct": kpi(len(risco_total) / total_pares * 100, "%", "etapa4", "% de pares em ruptura/crítico — rede completa"),
+        "e4.ruptura_critico.completa.receita": kpi(float(risco_total["RECEITA_TOTAL"].sum()), "R$", "etapa4", "Receita histórica associada a ruptura/crítico — rede completa"),
+        "e4.ruptura_critico.fisico.pares": kpi(int(len(risco_fisico)), "pares", "etapa4", "Pares em ruptura/crítico — rede física"),
+        "e4.ruptura_critico.fisico.pct": kpi(len(risco_fisico) / len(fisico) * 100, "%", "etapa4", "% de pares em ruptura/crítico — rede física"),
+        "e4.ruptura_critico.fisico.receita": kpi(float(risco_fisico["RECEITA_TOTAL"].sum()), "R$", "etapa4", "Receita histórica associada a ruptura/crítico — rede física"),
+        "e4.validacoes.total": kpi(len(validacoes), "checks", "etapa4", "Validações executadas na Etapa 4"),
+        "e4.validacoes.ok": kpi(int((validacoes["STATUS"] == "OK").sum()), "checks", "etapa4", "Validações OK na Etapa 4"),
+    }
+
+
 def gerar_resumo(
     cobertura: pd.DataFrame,
     categorias_n1: pd.DataFrame,
@@ -886,6 +907,9 @@ def main() -> None:
     salvar_csv(priorizacao, "priorizacao_reposicao_categoria_loja.csv")
     salvar_csv(recomendacoes, "recomendacoes_melhoria.csv")
     salvar_csv(validacoes, "validacoes_etapa4.csv")
+
+    # ── SSOT de KPI (fonte única; ver src/kpis.py) ────────────────────────────
+    emit_kpis("etapa4", construir_kpis(cobertura, validacoes))
 
     resumo = gerar_resumo(cobertura, categorias_n1, lojas, priorizacao, validacoes)
     (OUT / "resumo_etapa4.md").write_text(resumo, encoding="utf-8")

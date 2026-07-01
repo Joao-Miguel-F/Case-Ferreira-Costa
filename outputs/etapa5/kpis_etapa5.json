@@ -1,0 +1,152 @@
+{
+  "e5.acima_lista.loja93": {
+    "descricao": "Combinações acima da lista — Loja 93/B2B",
+    "fonte": "etapa5",
+    "unidade": "comb",
+    "valor": 10
+  },
+  "e5.acima_lista.rede_completa": {
+    "descricao": "Combinações loja×produto×embalagem acima da lista — rede completa",
+    "fonte": "etapa5",
+    "unidade": "comb",
+    "valor": 2089
+  },
+  "e5.acima_lista.rede_fisica": {
+    "descricao": "Combinações loja×produto×embalagem acima da lista — rede física",
+    "fonte": "etapa5",
+    "unidade": "comb",
+    "valor": 2079
+  },
+  "e5.candidatos.alta_fisica": {
+    "descricao": "Candidatos a repricing de prioridade ALTA — rede física",
+    "fonte": "etapa5",
+    "unidade": "comb",
+    "valor": 326
+  },
+  "e5.candidatos.rede_fisica": {
+    "descricao": "Candidatos a repricing — rede física",
+    "fonte": "etapa5",
+    "unidade": "comb",
+    "valor": 3260
+  },
+  "e5.cobertura_custo.pct_completa": {
+    "descricao": "Cobertura de custo (% receita) — rede completa",
+    "fonte": "etapa5",
+    "unidade": "%",
+    "valor": 16.39306525837631
+  },
+  "e5.cobertura_custo.pct_fisica": {
+    "descricao": "Cobertura de custo (% receita) — rede física",
+    "fonte": "etapa5",
+    "unidade": "%",
+    "valor": 15.160480062186382
+  },
+  "e5.cobertura_custo.pct_loja93": {
+    "descricao": "Cobertura de custo (% receita) — Loja 93/B2B",
+    "fonte": "etapa5",
+    "unidade": "%",
+    "valor": 12.827187235351056
+  },
+  "e5.cobertura_custo.receita_completa": {
+    "descricao": "Receita coberta por custo — rede completa",
+    "fonte": "etapa5",
+    "unidade": "R$",
+    "valor": 79099121.47057286
+  },
+  "e5.cobertura_custo.receita_fisica": {
+    "descricao": "Receita coberta por custo — rede física",
+    "fonte": "etapa5",
+    "unidade": "R$",
+    "valor": 49913569.471840195
+  },
+  "e5.cobertura_custo.receita_loja93": {
+    "descricao": "Receita coberta por custo — Loja 93/B2B",
+    "fonte": "etapa5",
+    "unidade": "R$",
+    "valor": 19661639.913560726
+  },
+  "e5.cobertura_custo.skus_com_compra": {
+    "descricao": "SKUs com compra registrada no período",
+    "fonte": "etapa5",
+    "unidade": "SKUs",
+    "valor": 329
+  },
+  "e5.cobertura_custo.skus_com_custo": {
+    "descricao": "SKUs com preço de compra válido (custo auditável)",
+    "fonte": "etapa5",
+    "unidade": "SKUs",
+    "valor": 261
+  },
+  "e5.desconto.rede_fisica": {
+    "descricao": "Desconto efetivo médio ponderado — rede física",
+    "fonte": "etapa5",
+    "unidade": "%",
+    "valor": 17.391959357873397
+  },
+  "e5.dispersao.cv_alta_fisica": {
+    "descricao": "SKUs com CV de preço >30% (rede física, embalagem 0)",
+    "fonte": "etapa5",
+    "unidade": "SKUs",
+    "valor": 46
+  },
+  "e5.margem.loja93": {
+    "descricao": "Margem bruta % ponderada (itens com custo) — Loja 93/B2B",
+    "fonte": "etapa5",
+    "unidade": "%",
+    "valor": 43.91077340199942
+  },
+  "e5.margem.rede_completa": {
+    "descricao": "Margem bruta % ponderada (itens com custo) — rede completa",
+    "fonte": "etapa5",
+    "unidade": "%",
+    "valor": 47.59941724014893
+  },
+  "e5.margem.rede_fisica": {
+    "descricao": "Margem bruta % ponderada (itens com custo) — rede física",
+    "fonte": "etapa5",
+    "unidade": "%",
+    "valor": 49.757785145584435
+  },
+  "e5.markup.rede_completa": {
+    "descricao": "Markup ponderado — rede completa",
+    "fonte": "etapa5",
+    "unidade": "x",
+    "valor": 1.9083757228100762
+  },
+  "e5.markup.rede_fisica": {
+    "descricao": "Markup ponderado — rede física",
+    "fonte": "etapa5",
+    "unidade": "x",
+    "valor": 1.990358113983732
+  },
+  "e5.naive.amplitude": {
+    "descricao": "Leitura ingênua: SKUs com amplitude de preço bruto >30%",
+    "fonte": "etapa5",
+    "unidade": "SKUs",
+    "valor": 2619
+  },
+  "e5.skus_margem_negativa.rede_fisica": {
+    "descricao": "SKUs com margem negativa (preço < custo) — rede física",
+    "fonte": "etapa5",
+    "unidade": "SKUs",
+    "valor": 7
+  },
+  "e5.skus_vendidos": {
+    "descricao": "SKUs vendidos (rede completa)",
+    "fonte": "etapa5",
+    "unidade": "SKUs",
+    "valor": 2729
+  },
+  "e5.validacoes.ok": {
+    "descricao": "Validações com status OK na Etapa 5",
+    "fonte": "etapa5",
+    "unidade": "checks",
+    "valor": 21
+  },
+  "e5.validacoes.total": {
+    "descricao": "Validações executadas na Etapa 5",
+    "fonte": "etapa5",
+    "unidade": "checks",
+    "valor": 21
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "e7.anti_dupla.pares": {
+    "descricao": "Pares que disparam mais de um sinal (entram uma vez via ação primária)",
+    "fonte": "etapa7",
+    "unidade": "pares",
+    "valor": 990
+  },
+  "e7.comprar.rede_fisica": {
+    "descricao": "Pares a comprar — rede física",
+    "fonte": "etapa7",
+    "unidade": "pares",
+    "valor": 19126
+  },
+  "e7.comprar.rede_fisica.valor": {
+    "descricao": "Investimento conhecido de recompra — rede física",
+    "fonte": "etapa7",
+    "unidade": "R$",
+    "valor": 4620387.547171
+  },
+  "e7.descontinuar.rede_fisica": {
+    "descricao": "Pares a descontinuar — rede física",
+    "fonte": "etapa7",
+    "unidade": "pares",
+    "valor": 434
+  },
+  "e7.descontinuar.rede_fisica.valor": {
+    "descricao": "Capital imobilizado com custo — rede física",
+    "fonte": "etapa7",
+    "unidade": "R$",
+    "valor": 372923.769829
+  },
+  "e7.prioridade_alta.rede_fisica": {
+    "descricao": "Pares de prioridade ALTA — rede física",
+    "fonte": "etapa7",
+    "unidade": "pares",
+    "valor": 2036
+  },
+  "e7.promover.rede_fisica": {
+    "descricao": "Pares a promover/queimar — rede física",
+    "fonte": "etapa7",
+    "unidade": "pares",
+    "valor": 752
+  },
+  "e7.promover.rede_fisica.valor": {
+    "descricao": "Estoque encalhado com custo — rede física",
+    "fonte": "etapa7",
+    "unidade": "R$",
+    "valor": 6724863.428335001
+  },
+  "e7.reprecificar.rede_fisica": {
+    "descricao": "Pares a reprecificar — rede física",
+    "fonte": "etapa7",
+    "unidade": "pares",
+    "valor": 956
+  },
+  "e7.repricing.margem_auditavel": {
+    "descricao": "Repricing com sinal de margem auditável",
+    "fonte": "etapa7",
+    "unidade": "pares",
+    "valor": 41
+  },
+  "e7.repricing.preco_com_custo": {
+    "descricao": "Repricing com custo válido, só sinal de preço/lista",
+    "fonte": "etapa7",
+    "unidade": "pares",
+    "valor": 75
+  },
+  "e7.repricing.preco_sem_custo": {
+    "descricao": "Repricing sem custo (ajuste de preço/lista)",
+    "fonte": "etapa7",
+    "unidade": "pares",
+    "valor": 895
+  },
+  "e7.repricing.total": {
+    "descricao": "Candidatos a repricing casados na base (loja×SKU, sinal de repricing)",
+    "fonte": "etapa7",
+    "unidade": "pares",
+    "valor": 1011
+  },
+  "e7.validacoes.ok": {
+    "descricao": "Validações OK na Etapa 7",
+    "fonte": "etapa7",
+    "unidade": "checks",
+    "valor": 23
+  },
+  "e7.validacoes.total": {
+    "descricao": "Validações executadas na Etapa 7",
+    "fonte": "etapa7",
+    "unidade": "checks",
+    "valor": 23
+  }
+}

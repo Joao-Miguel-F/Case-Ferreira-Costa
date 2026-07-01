@@ -80,6 +80,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from utils import LOJA_ATACADO, OUTPUTS  # noqa: E402
+from kpis import emit_kpis, kpi  # noqa: E402
 
 
 OUT = OUTPUTS / "etapa7"
@@ -686,6 +687,46 @@ def _linha_acao(acao_univ: pd.DataFrame, universo: str, acao: str) -> pd.Series:
                       "COBERTURA_VALOR_PCT": np.nan, "RECEITA_HISTORICA": 0.0})
 
 
+def construir_kpis(acionavel, acao_univ, fila, validacoes):
+    """KPIs da Etapa 7 (SSOT) — mesmas expressões narradas em gerar_resumo. Ver src/kpis.py."""
+    def pares(universo, acao):
+        return int(_linha_acao(acao_univ, universo, acao)["PARES"])
+
+    def valor(universo, acao):
+        return float(_linha_acao(acao_univ, universo, acao)["VALOR_FINANCEIRO_CONHECIDO"])
+
+    # Repricing "casado na base" = todos os pares com o SINAL de reprice (FLAG_REPRECIFICAR),
+    # não só onde reprice é a ação primária. É o conjunto de reprecificacao_candidatos.csv
+    # e o número narrado no README (1.011 = 41 + 75 + 895).
+    reprec_sig = acionavel[acionavel["FLAG_REPRECIFICAR"] == 1]
+    reprec_margem = int((reprec_sig["SINAL_MARGEM_AUDITAVEL"] == 1).sum())
+    reprec_preco_com_custo = int(
+        ((reprec_sig["SINAL_PRECO_LISTA"] == 1)
+         & (reprec_sig["FLAG_CUSTO_VALIDO"] == 1)
+         & (reprec_sig["SINAL_MARGEM_AUDITAVEL"] == 0)).sum())
+    reprec_preco_sem_custo = int(
+        ((reprec_sig["SINAL_PRECO_LISTA"] == 1) & (reprec_sig["FLAG_CUSTO_VALIDO"] == 0)).sum())
+    multi = int((acionavel["N_ACOES_SINALIZADAS"] > 1).sum())
+    alta_fis = fila[(fila["UNIVERSO_OPERACIONAL"] == UNIVERSO_FISICO) & (fila["FAIXA_PRIORIDADE"] == "ALTA")]
+    return {
+        "e7.comprar.rede_fisica": kpi(pares(UNIVERSO_FISICO, "COMPRAR"), "pares", "etapa7", "Pares a comprar — rede física"),
+        "e7.comprar.rede_fisica.valor": kpi(valor(UNIVERSO_FISICO, "COMPRAR"), "R$", "etapa7", "Investimento conhecido de recompra — rede física"),
+        "e7.reprecificar.rede_fisica": kpi(pares(UNIVERSO_FISICO, "REPRECIFICAR"), "pares", "etapa7", "Pares a reprecificar — rede física"),
+        "e7.promover.rede_fisica": kpi(pares(UNIVERSO_FISICO, "PROMOVER"), "pares", "etapa7", "Pares a promover/queimar — rede física"),
+        "e7.promover.rede_fisica.valor": kpi(valor(UNIVERSO_FISICO, "PROMOVER"), "R$", "etapa7", "Estoque encalhado com custo — rede física"),
+        "e7.descontinuar.rede_fisica": kpi(pares(UNIVERSO_FISICO, "DESCONTINUAR"), "pares", "etapa7", "Pares a descontinuar — rede física"),
+        "e7.descontinuar.rede_fisica.valor": kpi(valor(UNIVERSO_FISICO, "DESCONTINUAR"), "R$", "etapa7", "Capital imobilizado com custo — rede física"),
+        "e7.repricing.total": kpi(int(len(reprec_sig)), "pares", "etapa7", "Candidatos a repricing casados na base (loja×SKU, sinal de repricing)"),
+        "e7.repricing.margem_auditavel": kpi(reprec_margem, "pares", "etapa7", "Repricing com sinal de margem auditável"),
+        "e7.repricing.preco_com_custo": kpi(reprec_preco_com_custo, "pares", "etapa7", "Repricing com custo válido, só sinal de preço/lista"),
+        "e7.repricing.preco_sem_custo": kpi(reprec_preco_sem_custo, "pares", "etapa7", "Repricing sem custo (ajuste de preço/lista)"),
+        "e7.anti_dupla.pares": kpi(multi, "pares", "etapa7", "Pares que disparam mais de um sinal (entram uma vez via ação primária)"),
+        "e7.prioridade_alta.rede_fisica": kpi(int(len(alta_fis)), "pares", "etapa7", "Pares de prioridade ALTA — rede física"),
+        "e7.validacoes.total": kpi(len(validacoes), "checks", "etapa7", "Validações executadas na Etapa 7"),
+        "e7.validacoes.ok": kpi(int((validacoes["STATUS"] == "OK").sum()), "checks", "etapa7", "Validações OK na Etapa 7"),
+    }
+
+
 def gerar_resumo(acao_univ: pd.DataFrame, fila: pd.DataFrame, autoaudit: pd.DataFrame,
                  validacoes: pd.DataFrame) -> str:
     def linha(universo, acao):
@@ -930,6 +971,9 @@ def main() -> None:
     salvar_csv(recomendacoes, "recomendacoes_melhoria.csv")
     salvar_csv(validacoes, "validacoes_etapa7.csv")
     salvar_csv(autoaudit, "autoaudit_etapa7.csv")
+
+    # ── SSOT de KPI (fonte única; ver src/kpis.py) ────────────────────────────
+    emit_kpis("etapa7", construir_kpis(acionavel, acao_univ, fila, validacoes))
 
     (OUT / "resumo_etapa7.md").write_text(
         gerar_resumo(acao_univ, fila, autoaudit, validacoes), encoding="utf-8")
