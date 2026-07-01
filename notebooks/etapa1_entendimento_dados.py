@@ -40,6 +40,19 @@ OUT.mkdir(parents=True, exist_ok=True)
 
 print("Carregando bases brutas...")
 
+# fato_vendas_1.csv (59 MB) e o unico insumo bruto NAO versionado (ver .gitignore
+# e data/raw/README.md). Sem ele, so a Etapa 1 falha; as Etapas 2-7 reproduzem a
+# partir dos Parquets ja versionados em data/processed/. Mensagem clara evita o
+# traceback cru de "arquivo nao encontrado" num clone limpo.
+_fato_vendas = RAW / "fato_vendas_1.csv"
+if not _fato_vendas.exists():
+    raise FileNotFoundError(
+        f"Insumo bruto ausente: {_fato_vendas}.\n"
+        "Coloque fato_vendas_1.csv (entregue a parte com o case) em data/raw/ "
+        "para rodar a Etapa 1. Veja data/raw/README.md. As Etapas 2-7 nao precisam "
+        "dele: partem dos Parquets ja versionados em data/processed/."
+    )
+
 vendas   = pd.read_csv(RAW / "fato_vendas_1.csv",            index_col=0, encoding="latin1")
 compras  = pd.read_csv(RAW / "fato_compras_2.csv",           index_col=0, encoding="latin1")
 estoque  = pd.read_csv(RAW / "fato_estoque_inicial_2.csv",   sep=";",     encoding="latin1")
@@ -146,6 +159,45 @@ print(f"Transações          : {len(vendas_enr):,}")
 print(f"SKUs ativos         : {vendas_enr['CODIGO'].nunique():,}")
 print(f"Período             : {vendas_enr['DATA_VENDA'].min().date()} → {vendas_enr['DATA_VENDA'].max().date()}")
 print(f"Lojas               : {vendas_enr['COD_EMPRESA'].nunique()}")
+
+# =============================================================================
+# 4b. GATE DE QUALIDADE — asserts bloqueantes (falham a Etapa 1 se violados)
+# =============================================================================
+# As checagens impressas acima viram asserts: se qualquer premissa de base quebrar
+# (join perdeu dimensao, periodo mudou, loja a mais/menos, receita fora da faixa),
+# a Etapa 1 para AQUI e nao grava Parquets inconsistentes para as etapas seguintes.
+print("\n--- Gate de qualidade (asserts) ---")
+
+# Integridade referencial: nenhum produto/loja de vendas sem cadastro.
+assert not (codigos_vendas - codigos_dim), \
+    f"{len(codigos_vendas - codigos_dim)} produtos em vendas sem dim_produto"
+assert not (lojas_vendas - lojas_dim), \
+    f"{len(lojas_vendas - lojas_dim)} lojas em vendas sem dim_lojas"
+
+# Sem nulos nas dimensoes criticas apos o join (todas as agregacoes dependem delas).
+n_nulos_nivel1 = int(vendas_enr["NIVEL_1"].isna().sum())
+n_nulos_cidade = int(vendas_enr["CD_CIDADE"].isna().sum())
+assert n_nulos_nivel1 == 0, f"NIVEL_1 tem {n_nulos_nivel1} nulos apos o join"
+assert n_nulos_cidade == 0, f"CD_CIDADE tem {n_nulos_cidade} nulos apos o join"
+
+# Periodo esperado: 2024-01 a 2025-12 (24 meses completos).
+periodo_min = vendas_enr["DATA_VENDA"].min()
+periodo_max = vendas_enr["DATA_VENDA"].max()
+assert (periodo_min.year, periodo_min.month) == (2024, 1), f"Inicio inesperado: {periodo_min.date()}"
+assert (periodo_max.year, periodo_max.month) == (2025, 12), f"Fim inesperado: {periodo_max.date()}"
+
+# 11 lojas esperadas (9 fisicas + loja 92 + loja 93 atacado).
+n_lojas = vendas_enr["COD_EMPRESA"].nunique()
+assert n_lojas == 11, f"Esperava 11 lojas, encontrou {n_lojas}"
+
+# Receita total ~R$ 482,5M (banda de tolerancia, nao numero magico exato).
+receita_total = float(vendas_enr["RECEITA"].sum())
+assert 481e6 <= receita_total <= 484e6, \
+    f"Receita total fora da faixa esperada (~R$482,5M): R$ {receita_total/1e6:.1f}M"
+
+print(f"OK: integridade 0 orfaos | NIVEL_1/CD_CIDADE 0 nulos | "
+      f"periodo {periodo_min.date()}..{periodo_max.date()} | {n_lojas} lojas | "
+      f"receita R$ {receita_total/1e6:.1f}M")
 
 # =============================================================================
 # 5. SALVAR BASES TRATADAS

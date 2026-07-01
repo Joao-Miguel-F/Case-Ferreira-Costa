@@ -38,6 +38,8 @@ outputs/etapa3/vendas_mensais.csv
 outputs/etapa3/sazonalidade_picos_quedas.csv
 outputs/etapa3/decomposicao_queda_2025_categorias.csv
 outputs/etapa3/decomposicao_queda_2025_lojas.csv
+outputs/etapa3/diagnostico_captura_mensal.csv
+outputs/etapa3/diagnostico_captura_lojas_mensal.csv
 outputs/etapa3/impacto_loja93.csv
 outputs/etapa3/notas_metodologicas.csv
 outputs/etapa3/recomendacoes_melhoria.csv
@@ -384,6 +386,48 @@ def decompor_2025_vs_2024(df: pd.DataFrame, nome_universo: str, keys: list[str])
     return wide.sort_values("DELTA_RECEITA_2025_VS_2024").reset_index(drop=True)
 
 
+def diagnostico_captura_mensal(vendas: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Diagnóstico da queda de 2025: mercado (retração) ou captura (truncamento)?
+
+    A receita e o nº de linhas caem quase monotonicamente ao longo de 2025. Isso
+    tanto pode ser retração real quanto **truncamento de captura** (extração/carga
+    incompleta dos meses finais). Para separar as hipóteses sem afirmar causa, esta
+    função materializa, por mês (24 meses, rede completa):
+      - nº de lojas ativas, nº de SKUs distintos, nº de linhas e receita;
+      - e a mesma quebra por loja × mês.
+
+    Leitura: se a queda é **homogênea** entre lojas (todas encolhem juntas), pesa
+    para retração de mercado; se **lojas somem** da base em meses de 2025 (linhas
+    caem a zero loja a loja), pesa para truncamento de captura.
+    """
+    mensal = (
+        vendas.groupby(["ANO_MES", "ANO", "MES"], dropna=False)
+        .agg(
+            LOJAS_ATIVAS=("COD_EMPRESA", "nunique"),
+            SKUS_DISTINTOS=("CODIGO", "nunique"),
+            LINHAS=("RECEITA", "size"),
+            RECEITA=("RECEITA", "sum"),
+        )
+        .reset_index()
+        .sort_values(["ANO", "MES"])
+        .reset_index(drop=True)
+    )
+    mensal["RECEITA_MEDIA_LINHA"] = safe_div(mensal["RECEITA"], mensal["LINHAS"])
+
+    lojas_mensal = (
+        vendas.groupby(["COD_EMPRESA", "CD_CIDADE", "CD_ESTADO", "TIPO_OPERACAO", "ANO_MES", "ANO", "MES"], dropna=False)
+        .agg(
+            LINHAS=("RECEITA", "size"),
+            SKUS_DISTINTOS=("CODIGO", "nunique"),
+            RECEITA=("RECEITA", "sum"),
+        )
+        .reset_index()
+        .sort_values(["COD_EMPRESA", "ANO", "MES"])
+        .reset_index(drop=True)
+    )
+    return mensal, lojas_mensal
+
+
 def calcular_impacto_loja93(vendas: pd.DataFrame) -> pd.DataFrame:
     rec_total = vendas["RECEITA"].sum()
     qtd_total = vendas["QTD_ARMAZENAGEM"].sum()
@@ -582,9 +626,9 @@ def gerar_notas_metodologicas() -> pd.DataFrame:
             },
             {
                 "TEMA": "Queda 2025",
-                "DECISAO": "Comparação de anos completos presentes na base: 2025 vs 2024.",
-                "LIMITACAO": "Análise descritiva; não atribui causa sem dado adicional de mercado, ruptura ou captura.",
-                "RECOMENDACAO": "Cruzar com calendário comercial, campanhas, disponibilidade/ruptura, fechamento de lojas, dados de mercado e eventuais mudanças de captura.",
+                "DECISAO": "Comparação de anos completos presentes na base: 2025 vs 2024. Tratada como hipótese (retração de mercado × truncamento de captura), não como achado fechado.",
+                "LIMITACAO": "Análise descritiva; não atribui causa sem dado adicional. Se for truncamento de captura, contamina VENDA_MEDIA_MES e a demanda das Etapas 6/7.",
+                "RECOMENDACAO": "Usar diagnostico_captura_mensal.csv e diagnostico_captura_lojas_mensal.csv para testar homogeneidade entre lojas vs lojas sumindo; cruzar com calendário comercial, ruptura e fechamento de lojas antes de tratar a queda como definitiva.",
             },
         ]
     )
@@ -723,7 +767,7 @@ def gerar_resumo(
 - A curva A concentra {fmt_pct(abc_full_a["RECEITA"] / totais_full["RECEITA"] * 100)} da receita em {fmt_num(abc_full_a["SKUS"])} SKUs na rede completa; sem a Loja 93, concentra {fmt_pct(abc_fisica_a["RECEITA"] / totais_fisica["RECEITA"] * 100)} em {fmt_num(abc_fisica_a["SKUS"])} SKUs.
 - Foram observadas {vendas["NIVEL_1"].nunique()} categorias de nível 1. A maior categoria na rede completa é `{top_cat_full["NIVEL_1"]}`, com {fmt_brl(top_cat_full["RECEITA"] / 1e6)}; na rede física, `{top_cat_fisica["NIVEL_1"]}`, com {fmt_brl(top_cat_fisica["RECEITA"] / 1e6)}.
 - A loja de maior receita na rede completa é {int(top_loja_full["COD_EMPRESA"])} ({top_loja_full["CD_CIDADE"]}-{top_loja_full["CD_ESTADO"]}), com {fmt_brl(top_loja_full["RECEITA"] / 1e6)}. Sem a Loja 93, a líder é {int(top_loja_fisica["COD_EMPRESA"])} ({top_loja_fisica["CD_CIDADE"]}-{top_loja_fisica["CD_ESTADO"]}), com {fmt_brl(top_loja_fisica["RECEITA"] / 1e6)}.
-- A receita caiu {fmt_pct(var_full)} em 2025 vs 2024 na rede completa e {fmt_pct(var_fisica)} na rede física sem Loja 93.
+- **Queda de 2025 — hipótese a validar, não achado fechado.** A receita recua {fmt_pct(var_full)} na rede completa e {fmt_pct(var_fisica)} na rede física (2025 vs 2024), de forma quase monotônica ao longo de 2025, com o nº de linhas caindo na mesma proporção. Isso é assinatura possível de **truncamento de captura** (extração/carga incompleta dos meses finais), não necessariamente retração de mercado. Ver `diagnostico_captura_mensal.csv` e `diagnostico_captura_lojas_mensal.csv`: se a queda for homogênea entre lojas, pesa para mercado; se lojas "somem" da base ao longo de 2025, pesa para captura. **Impacto downstream:** essa mesma base alimenta `VENDA_MEDIA_MES` e a projeção de compras das Etapas 6/7 — a incerteza se propaga para a demanda projetada, que deve ser lida como ordem de prioridade, não previsão fechada.
 - O maior mês por receita na rede completa foi {pico_full["ANO_MES"]}, com {fmt_brl(pico_full["RECEITA"] / 1e6)}; o menor foi {menor_full["ANO_MES"]}, com {fmt_brl(menor_full["RECEITA"] / 1e6)}.
 - A maior contribuição bruta para a queda de receita em 2025, por categoria na rede completa, veio de `{queda_cat_full["NIVEL_1"]}` ({fmt_brl(queda_cat_full["DELTA_RECEITA_2025_VS_2024"] / 1e6)}). Por loja, veio da loja {int(queda_loja_full["COD_EMPRESA"])} ({queda_loja_full["CD_CIDADE"]}-{queda_loja_full["CD_ESTADO"]}), com {fmt_brl(queda_loja_full["DELTA_RECEITA_2025_VS_2024"] / 1e6)}.
 
@@ -733,7 +777,7 @@ def gerar_resumo(
 - `TRANSACOES` representa linhas de venda, não cupons únicos. A base processada não possui id de cupom, pedido ou nota. Isto está documentado como limitação relevante e recomendação de melhoria em `notas_metodologicas.csv` e `recomendacoes_melhoria.csv`.
 - Ticket médio foi mantido como proxy de receita por linha de venda; preço médio foi calculado como receita por unidade de armazenagem.
 - A Loja 93 é operação B2B/atacado e distorce médias, rankings e sazonalidade. Por isso todos os outputs trazem `UNIVERSO`.
-- A queda de 2025 é comparada contra 2024 completo, usando apenas datas presentes em `vendas_tratadas.parquet`.
+- A queda de 2025 é comparada contra 2024 completo, usando apenas datas presentes em `vendas_tratadas.parquet`. Ela é tratada como **hipótese a confirmar** (retração de mercado × truncamento de captura), com o diagnóstico mensal/por loja em `diagnostico_captura_mensal.csv` e `diagnostico_captura_lojas_mensal.csv` para instruir a decisão antes de tratar o número como definitivo.
 - Recomendações de melhoria foram registradas para pontos que limitam a leitura profissional dos dados: id de transação, canal formal da Loja 93, movimentações de estoque, variáveis causais da queda e dicionário de métricas.
 
 ## Validações
@@ -809,6 +853,7 @@ def main() -> None:
     picos_quedas = identificar_picos_quedas(mensal)
     decomposicao_categorias = pd.concat(decomp_cat_lst, ignore_index=True)
     decomposicao_lojas = pd.concat(decomp_loja_lst, ignore_index=True)
+    diag_captura_mensal, diag_captura_lojas = diagnostico_captura_mensal(vendas)
     impacto_loja93 = calcular_impacto_loja93(vendas)
     notas_metodologicas = gerar_notas_metodologicas()
     recomendacoes_melhoria = gerar_recomendacoes_melhoria()
@@ -841,6 +886,8 @@ def main() -> None:
     salvar_csv(picos_quedas, "sazonalidade_picos_quedas.csv")
     salvar_csv(decomposicao_categorias, "decomposicao_queda_2025_categorias.csv")
     salvar_csv(decomposicao_lojas, "decomposicao_queda_2025_lojas.csv")
+    salvar_csv(diag_captura_mensal, "diagnostico_captura_mensal.csv")
+    salvar_csv(diag_captura_lojas, "diagnostico_captura_lojas_mensal.csv")
     salvar_csv(impacto_loja93, "impacto_loja93.csv")
     salvar_csv(notas_metodologicas, "notas_metodologicas.csv")
     salvar_csv(recomendacoes_melhoria, "recomendacoes_melhoria.csv")

@@ -19,7 +19,7 @@
 - A curva A concentra 80,0% da receita em 522 SKUs na rede completa; sem a Loja 93, concentra 80,0% em 713 SKUs.
 - Foram observadas 23 categorias de nível 1. A maior categoria na rede completa é `D - ELETROS`, com R$ 197,6M; na rede física, `D - ELETROS`, com R$ 81,4M.
 - A loja de maior receita na rede completa é 93 (ALHANDRA-PB), com R$ 153,3M. Sem a Loja 93, a líder é 3 (SALVADOR-BA), com R$ 62,6M.
-- A receita caiu -54,2% em 2025 vs 2024 na rede completa e -47,6% na rede física sem Loja 93.
+- **Queda de 2025 — hipótese a validar, não achado fechado.** A receita recua -54,2% na rede completa e -47,6% na rede física (2025 vs 2024), de forma quase monotônica ao longo de 2025, com o nº de linhas caindo na mesma proporção. Isso é assinatura possível de **truncamento de captura** (extração/carga incompleta dos meses finais), não necessariamente retração de mercado. Ver `diagnostico_captura_mensal.csv` e `diagnostico_captura_lojas_mensal.csv`: se a queda for homogênea entre lojas, pesa para mercado; se lojas "somem" da base ao longo de 2025, pesa para captura. **Impacto downstream:** essa mesma base alimenta `VENDA_MEDIA_MES` e a projeção de compras das Etapas 6/7 — a incerteza se propaga para a demanda projetada, que deve ser lida como ordem de prioridade, não previsão fechada.
 - O maior mês por receita na rede completa foi 2024-11, com R$ 47,2M; o menor foi 2025-12, com R$ 3,9M.
 - A maior contribuição bruta para a queda de receita em 2025, por categoria na rede completa, veio de `D - ELETROS` (R$ -92,6M). Por loja, veio da loja 93 (ALHANDRA-PB), com R$ -76,4M.
 
@@ -29,7 +29,7 @@
 - `TRANSACOES` representa linhas de venda, não cupons únicos. A base processada não possui id de cupom, pedido ou nota. Isto está documentado como limitação relevante e recomendação de melhoria em `notas_metodologicas.csv` e `recomendacoes_melhoria.csv`.
 - Ticket médio foi mantido como proxy de receita por linha de venda; preço médio foi calculado como receita por unidade de armazenagem.
 - A Loja 93 é operação B2B/atacado e distorce médias, rankings e sazonalidade. Por isso todos os outputs trazem `UNIVERSO`.
-- A queda de 2025 é comparada contra 2024 completo, usando apenas datas presentes em `vendas_tratadas.parquet`.
+- A queda de 2025 é comparada contra 2024 completo, usando apenas datas presentes em `vendas_tratadas.parquet`. Ela é tratada como **hipótese a confirmar** (retração de mercado × truncamento de captura), com o diagnóstico mensal/por loja em `diagnostico_captura_mensal.csv` e `diagnostico_captura_lojas_mensal.csv` para instruir a decisão antes de tratar o número como definitivo.
 - Recomendações de melhoria foram registradas para pontos que limitam a leitura profissional dos dados: id de transação, canal formal da Loja 93, movimentações de estoque, variáveis causais da queda e dicionário de métricas.
 
 ## Validações

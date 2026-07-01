@@ -20,6 +20,3 @@ data/raw/fato_vendas_1.csv
 # IDEs
 .vscode/
 .idea/
-
-# Revisão interna — não publicar no GitHub
-docs/revisao-senior-inconsistencias.md

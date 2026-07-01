@@ -37,6 +37,7 @@ E3 = OUTPUTS / "etapa3"
 E4 = OUTPUTS / "etapa4"
 E5 = OUTPUTS / "etapa5"
 E6 = OUTPUTS / "etapa6"
+E7 = OUTPUTS / "etapa7"
 STATUS_ORDER = ["EM RUPTURA", "CRÍTICO", "ATENÇÃO", "SAUDÁVEL", "SEM VENDA"]
 
 # ── formatação pt-BR ────────────────────────────────────────────────────────
@@ -209,10 +210,11 @@ _TEMPLATE = r"""<!DOCTYPE html>
   <button class="nav-item" data-tab="t5"><span class="nav-num">5</span> Cobertura cat./loja</button>
   <button class="nav-item" data-tab="te5"><span class="nav-num">6</span> Precificação e margem</button>
   <button class="nav-item" data-tab="te6"><span class="nav-num">7</span> Projeção compras</button>
-  <button class="nav-item" data-tab="t6"><span class="nav-num">8</span> Bugs corrigidos</button>
-  <button class="nav-item" data-tab="t7"><span class="nav-num">9</span> Inconsistências</button>
-  <button class="nav-item" data-tab="t8"><span class="nav-num">10</span> Dicionário de dados</button>
-  <button class="nav-item" data-tab="t9"><span class="nav-num">11</span> Glossário comercial</button>
+  <button class="nav-item" data-tab="te7"><span class="nav-num">8</span> Recomendações finais</button>
+  <button class="nav-item" data-tab="t6"><span class="nav-num">9</span> Bugs corrigidos</button>
+  <button class="nav-item" data-tab="t7"><span class="nav-num">10</span> Inconsistências</button>
+  <button class="nav-item" data-tab="t8"><span class="nav-num">11</span> Dicionário de dados</button>
+  <button class="nav-item" data-tab="t9"><span class="nav-num">12</span> Glossário comercial</button>
 </nav>
 
 <main class="main">
@@ -220,7 +222,7 @@ _TEMPLATE = r"""<!DOCTYPE html>
   <section id="t1" class="panel active">
     <span class="section-tag">Visão geral</span>
     <h1>Relatório de qualidade de dados</h1>
-    <p class="lead">Consolidação das Etapas 1 a 6 do case, da revisão de qualidade e das 4 correções
+    <p class="lead">Consolidação das Etapas 1 a 7 do case, da revisão de qualidade e das 4 correções
        aplicadas. Todos os números são lidos das bases tratadas e dos CSVs de saída.</p>
     <div class="kpi-grid" id="kpiGrid"></div>
     <h2>Linha do tempo</h2>
@@ -454,6 +456,52 @@ _TEMPLATE = r"""<!DOCTYPE html>
     </table></div></div>
   </section>
 
+  <!-- ABA ETAPA 7 -->
+  <section id="te7" class="panel">
+    <span class="section-tag">Etapa 7</span>
+    <h1>Recomendações finais e plano de execução</h1>
+    <p class="lead">Síntese de decisão: consolida as Etapas 3-6 e classifica cada par loja × SKU em uma de quatro
+       ações comerciais — <b>comprar</b>, <b>reprecificar</b>, <b>promover/queimar estoque</b> ou <b>descontinuar</b>.
+       Cada par recebe uma <b>ação primária</b> por precedência, para não dupla contar capital nem quantidade.
+       Termos em linguagem de negócio na aba <b>Glossário comercial</b>.</p>
+    <div class="kpi-grid" id="e7KpiGrid"></div>
+    <div class="method">
+      <b>Metodologia:</b> precedência <code>DESCONTINUAR &gt; PROMOVER &gt; REPRECIFICAR &gt; COMPRAR</code>.
+      Descontinuar = sem venda com estoque parado e curva ABC ≠ A (o campeão curva A parado é protegido e vai
+      para promover/transferir). Promover = cobertura acima de 180 dias. Reprecificar vem dos candidatos da
+      Etapa 5, separando <b>sinal de margem auditável</b> (item com custo e margem baixa/negativa) de
+      <b>sinal de preço/lista</b> (desconto alto ou preço fora da faixa, com ou sem custo).
+      Comprar vem da fila da Etapa 6. Valor financeiro (capital, encalhe, investimento) só existe com custo válido.
+    </div>
+
+    <h2>Ações por universo</h2>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>Universo</th><th>Ação</th><th class="num">Pares</th><th class="num">SKUs</th>
+        <th class="num">Pares c/ valor</th><th class="num">Valor conhecido</th><th class="num">Cobertura custo</th></tr></thead>
+      <tbody id="e7AcaoBody"></tbody>
+    </table></div></div>
+
+    <h2>Top categorias por ação (rede física)</h2>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>Ação</th><th>Categoria N1</th><th class="num">Pares</th>
+        <th class="num">Valor conhecido</th></tr></thead>
+      <tbody id="e7CatBody"></tbody>
+    </table></div></div>
+
+    <h2>Fila priorizada de execução</h2>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>Escopo</th><th class="num">Rank</th><th>Prioridade</th><th>Ação</th><th>Loja</th>
+        <th>Produto</th><th class="num">Valor da ação</th></tr></thead>
+      <tbody id="e7PrioBody"></tbody>
+    </table></div></div>
+
+    <h2>Autoaudit / revisão crítica</h2>
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr><th>Risco</th><th>Controle aplicado</th><th>Evidencia</th><th>Risco remanescente</th></tr></thead>
+      <tbody id="e7AuditBody"></tbody>
+    </table></div></div>
+  </section>
+
   <!-- ABA 6 -->
   <section id="t6" class="panel">
     <span class="section-tag">Revisão de qualidade</span>
@@ -594,7 +642,8 @@ const steps=[["1","Etapa 1","Entendimento e limpeza dos dados brutos"],
   ["4","Etapa 4","Cobertura por categoria e loja"],
   ["5","Etapa 5","Precificação e variação de margem"],
   ["6","Etapa 6","Projeção de compras para 90 dias"],
-  ["7","Revisão","Correções e limitações documentadas"]];
+  ["7","Etapa 7","Recomendações finais e execução"],
+  ["8","Revisão","Correções e limitações documentadas"]];
 document.getElementById("stepper").innerHTML = steps.map(([n,t,d])=>
   `<div class="step"><div class="dot">${n}</div><div class="st-t">${t}</div><div class="st-d">${d}</div></div>`).join("");
 
@@ -820,10 +869,44 @@ if(DATA.etapa6){
     `<td>${esc(r.evidencia)}</td><td>${esc(r.risco_remanescente)}</td></tr>`).join("");
 }
 
+if(DATA.etapa7){
+  const e7Kpis=[
+    ["comprar","Pares comprar"],
+    ["reprecificar","Pares reprecificar"],
+    ["promover","Pares promover"],
+    ["descontinuar","Pares descontinuar"],
+    ["valor_encalhe","Encalhe c/ custo"],
+    ["validacoes","Validacoes"]
+  ];
+  document.getElementById("e7KpiGrid").innerHTML = e7Kpis.map(([k,l])=>
+    `<div class="kpi"><div class="v">${esc(DATA.etapa7.kpis[k])}</div><div class="l">${l}</div></div>`).join("");
+  const acaoBadge=a=>{
+    const m={"COMPRAR":"b-baixo","REPRECIFICAR":"sev-medio","PROMOVER":"sev-medio","DESCONTINUAR":"sev-critico"};
+    return `<span class="badge ${m[a]||'b-baixo'}">${esc(a)}</span>`;
+  };
+  document.getElementById("e7AcaoBody").innerHTML = DATA.etapa7.acoes.map(r=>
+    `<tr><td>${esc(r.universo)}</td><td>${acaoBadge(r.acao)}</td>`+
+    `<td class="num">${esc(r.pares)}</td><td class="num">${esc(r.skus)}</td>`+
+    `<td class="num">${esc(r.pares_valor)}</td><td class="num">${esc(r.valor)}</td>`+
+    `<td class="num">${esc(r.cobertura)}</td></tr>`).join("");
+  document.getElementById("e7CatBody").innerHTML = DATA.etapa7.categorias.map(r=>
+    `<tr><td>${acaoBadge(r.acao)}</td><td>${esc(r.categoria)}</td>`+
+    `<td class="num">${esc(r.pares)}</td><td class="num">${esc(r.valor)}</td></tr>`).join("");
+  document.getElementById("e7PrioBody").innerHTML = DATA.etapa7.prioridades.map(r=>
+    `<tr><td>${esc(r.escopo)}</td><td class="num">${esc(r.rank)}</td>`+
+    `<td><span class="badge ${r.faixa==='ALTA'?'sev-critico':(r.faixa==='MEDIA'?'sev-medio':'b-baixo')}">${esc(r.faixa)}</span></td>`+
+    `<td>${acaoBadge(r.acao)}</td><td>${esc(r.loja)}</td>`+
+    `<td><b>${esc(r.codigo)}</b><br><span class="muted">${esc(r.desc)}</span></td>`+
+    `<td class="num">${esc(r.valor)}</td></tr>`).join("");
+  document.getElementById("e7AuditBody").innerHTML = DATA.etapa7.autoaudit.map(r=>
+    `<tr><td><b>${esc(r.risco)}</b></td><td>${esc(r.controle)}</td>`+
+    `<td>${esc(r.evidencia)}</td><td>${esc(r.risco_remanescente)}</td></tr>`).join("");
+}
+
 /* ---- footer ---- */
 document.getElementById("footer").innerHTML =
   `Relatório gerado em <b>${esc(DATA.gerado_em)}</b> · Fonte: bases tratadas em `+
-  `<code>data/processed/</code> e saídas em <code>outputs/etapa1</code>…<code>outputs/etapa6</code> · `+
+  `<code>data/processed/</code> e saídas em <code>outputs/etapa1</code>…<code>outputs/etapa7</code> · `+
   `Case Técnico — Análise de Desempenho de Produtos no Varejo.`;
 </script>
 </body>
@@ -965,6 +1048,8 @@ DESCRICOES_COLUNAS = {
     "STATUS_ESTOQUE": "Classificação de cobertura: ruptura, crítico, atenção, saudável ou sem venda.",
     "PARES_LOJA_PRODUTO": "Quantidade de pares loja x produto no agrupamento.",
     "SKUS_DISTINTOS": "Quantidade de produtos distintos no agrupamento de cobertura.",
+    "LINHAS": "Contagem de linhas de venda (proxy de transações) no agrupamento.",
+    "RECEITA_MEDIA_LINHA": "Receita média por linha de venda no período (receita ÷ linhas).",
     "LOJAS_DISTINTAS": "Quantidade de lojas distintas no agrupamento de cobertura.",
     "RECEITA_HISTORICA_TOTAL": "Receita histórica dos pares loja x produto do agrupamento.",
     "RECEITA_RUPTURA_CRITICO": "Receita histórica dos pares em status EM RUPTURA ou CRÍTICO.",
@@ -1056,9 +1141,13 @@ DESCRICOES_COLUNAS = {
     "CV_PRECO": "Coeficiente de variação do preço entre lojas (desvio padrão ÷ média), por embalagem.",
     "AMPLITUDE_PCT": "Amplitude do preço entre lojas: (máximo − mínimo) ÷ média.",
     "FLAG_DISPERSAO_ALTA": "Flag 1/0 indicando dispersão de preço alta (CV > 30%).",
-    "RANK_PRIORIDADE": "Ranking de prioridade do candidato a repricing dentro do universo.",
-    "SCORE_PRIORIDADE": "Score de priorização do candidato: nº de sinais + percentil de receita.",
+    "RANK_PRIORIDADE": "Ranking de RISCO do candidato a repricing (score = nº de sinais + percentil de receita); fila de triagem.",
+    "SCORE_PRIORIDADE": "Score de risco do candidato: nº de sinais + percentil de receita.",
     "RECEITA_PERCENTIL": "Percentil de receita do candidato dentro do conjunto de candidatos.",
+    "RANK_IMPACTO": "Ranking de IMPACTO comercial do candidato (por dinheiro em jogo); fila complementar ao ranking de risco.",
+    "FAIXA_IMPACTO": "Faixa do ranking de impacto: ALTA, MEDIA ou MONITORAR.",
+    "IMPACTO_FINANCEIRO_ESTIMADO": "Impacto estimado do candidato: receita exposta × magnitude do sinal de preço/margem.",
+    "MAGNITUDE_SINAL_PCT": "Maior magnitude (%) do sinal do item: desconto efetivo, desvio vs mediana ou distância da margem-alvo.",
     "FAIXA_PRIORIDADE": "Faixa de prioridade do candidato: ALTA, MEDIA ou MONITORAR.",
     "VALIDACAO": "Nome da checagem de reconciliação numérica executada.",
     "OBSERVADO": "Valor observado na checagem.",
@@ -1086,6 +1175,41 @@ DESCRICOES_COLUNAS = {
     "RISCO_ANALITICO": "Risco analítico associado à limitação.",
     "RECOMENDACAO": "Recomendação prática de melhoria.",
     "IMPACTO_ESPERADO": "Impacto esperado ao implementar a recomendação.",
+    # Etapa 7 — recomendações finais
+    "ACAO_PRIMARIA": "Ação primária do par por precedência (DESCONTINUAR > PROMOVER > REPRECIFICAR > COMPRAR); cada par entra uma vez para não dupla contar.",
+    "FLAG_DESCONTINUAR": "Flag 1/0: par em SEM VENDA com estoque parado, curva ABC conhecida e curva ABC != A (capital imobilizado a delistar).",
+    "FLAG_PROMOVER": "Flag 1/0: estoque encalhado que ainda gira (cobertura > 180 dias) ou campeão curva A parado.",
+    "FLAG_REPRECIFICAR": "Flag 1/0: candidato a repricing da Etapa 5 (faixa ALTA/MEDIA) para o par loja × SKU.",
+    "FLAG_COMPRAR": "Flag 1/0: par com compra recomendada na Etapa 6 (QTD_RECOMENDADA_ARM > 0).",
+    "FLAG_PROTEGIDO_CAMPEAO": "Flag 1/0: SKU curva A parado protegido do descontinue e roteado para promover/transferir.",
+    "FLAG_PROTEGIDO_SEM_CURVA": "Flag 1/0: SKU parado com curva ABC ausente protegido do descontinue automatico e roteado para promover/revisar.",
+    "FLAG_CURVA_ABC_AUSENTE": "Flag 1/0: curva ABC ausente no par apos fallback auditavel quando aplicavel.",
+    "CURVA_ABC_ORIGEM": "Origem da curva ABC usada no par: universo operacional, fallback da rede completa para Loja 93 ou ausente.",
+    "N_ACOES_SINALIZADAS": "Quantidade de ações que o par dispara como sinal (pode ser > 1).",
+    "SINAL_MARGEM_AUDITAVEL": "Flag 1/0: repricing com sinal de margem baixa/negativa auditavel (item com custo na Etapa 5).",
+    "SINAL_PRECO_LISTA": "Flag 1/0: repricing com sinal de preço/lista (desconto alto ou preço fora da faixa), sem exigir custo.",
+    "REPRICING_FAIXA": "Faixa do candidato a repricing da Etapa 5 (ALTA/MEDIA) colapsada por loja × SKU.",
+    "REPRICING_N_EMBALAGENS": "Quantidade de embalagens do SKU que são candidatas a repricing na loja.",
+    "REPRICING_SCORE": "Maior score de priorização de repricing (Etapa 5) entre as embalagens do par.",
+    "REPRICING_RECEITA": "Receita das combinações de repricing do par (magnitude de exposição, não investimento).",
+    "FAIXA_COMPRA_ETAPA6": "Faixa de prioridade da compra herdada da Etapa 6 (ALTA/MEDIA/MONITORAR).",
+    "TIPO_VALOR_ACAO": "Natureza do valor financeiro da ação primária (capital a liberar, investimento de recompra ou sinal de preço sem valor).",
+    "CAPITAL_IMOBILIZADO": "Capital parado no par a descontinuar = estoque projetado × custo; só com custo válido, senão NaN.",
+    "VALOR_ESTOQUE_ENCALHE": "Valor do estoque encalhado a promover = estoque projetado × custo; só com custo válido, senão NaN.",
+    "INVESTIMENTO_RECOMPRA": "Investimento de recompra do par (Etapa 6); só com custo válido, senão NaN.",
+    "VALOR_ACAO_PRIMARIA": "Valor financeiro atrelado à ação primária, base das agregações sem dupla contagem. NaN = não avaliado.",
+    "RANK_EXECUCAO": "Posição do par na fila de execução do universo (banda de prioridade, precedência de ação, urgência).",
+    "PARES": "Quantidade de pares loja × SKU no recorte.",
+    "PARES_COM_VALOR": "Pares do recorte com valor financeiro conhecido (custo válido).",
+    "PARES_SEM_VALOR": "Pares do recorte sem valor financeiro (sem custo ou ação sem valor, como repricing).",
+    "VALOR_FINANCEIRO_CONHECIDO": "Soma do valor da ação primária no recorte, apenas para itens com custo (NaN se nenhum).",
+    "COBERTURA_VALOR_PCT": "Percentual de pares do recorte com valor financeiro conhecido.",
+    "RECEITA_HISTORICA": "Receita histórica dos pares do recorte (base para leitura relativa, não perda prevista).",
+    "RISCO": "Armadilha de interpretação avaliada na autoaudit.",
+    "COMO_PODERIA_ERRAR": "Como a análise poderia errar se a armadilha não fosse tratada.",
+    "CONTROLE_APLICADO": "Controle aplicado no código para evitar a armadilha.",
+    "EVIDENCIA": "Evidência numérica de que o controle foi aplicado.",
+    "RISCO_REMANESCENTE": "Risco que permanece mesmo após o controle.",
 }
 
 
@@ -1158,6 +1282,8 @@ artefatos_dicionario = [
     (E3 / "sazonalidade_picos_quedas.csv", "output_etapa3.sazonalidade_picos_quedas"),
     (E3 / "decomposicao_queda_2025_categorias.csv", "output_etapa3.decomposicao_queda_2025_categorias"),
     (E3 / "decomposicao_queda_2025_lojas.csv", "output_etapa3.decomposicao_queda_2025_lojas"),
+    (E3 / "diagnostico_captura_mensal.csv", "output_etapa3.diagnostico_captura_mensal"),
+    (E3 / "diagnostico_captura_lojas_mensal.csv", "output_etapa3.diagnostico_captura_lojas_mensal"),
     (E3 / "impacto_loja93.csv", "output_etapa3.impacto_loja93"),
     (E3 / "notas_metodologicas.csv", "output_etapa3.notas_metodologicas"),
     (E3 / "recomendacoes_melhoria.csv", "output_etapa3.recomendacoes_melhoria"),
@@ -1178,6 +1304,7 @@ artefatos_dicionario = [
     (E5 / "precificacao_desconto.csv", "output_etapa5.precificacao_desconto"),
     (E5 / "dispersao_preco_lojas.csv", "output_etapa5.dispersao_preco_lojas"),
     (E5 / "candidatos_repricing.csv", "output_etapa5.candidatos_repricing"),
+    (E5 / "candidatos_repricing_impacto.csv", "output_etapa5.candidatos_repricing_impacto"),
     (E5 / "recomendacoes_melhoria.csv", "output_etapa5.recomendacoes_melhoria"),
     (E5 / "validacoes_etapa5.csv", "output_etapa5.validacoes_etapa5"),
     (E5 / "autoaudit_etapa5.csv", "output_etapa5.autoaudit_etapa5"),
@@ -1190,6 +1317,15 @@ artefatos_dicionario = [
     (E6 / "recomendacoes_melhoria.csv", "output_etapa6.recomendacoes_melhoria"),
     (E6 / "validacoes_etapa6.csv", "output_etapa6.validacoes_etapa6"),
     (E6 / "autoaudit_etapa6.csv", "output_etapa6.autoaudit_etapa6"),
+    (E7 / "recomendacoes_sku_loja.csv", "output_etapa7.recomendacoes_sku_loja"),
+    (E7 / "recomendacoes_acao_universo.csv", "output_etapa7.recomendacoes_acao_universo"),
+    (E7 / "recomendacoes_categoria_n1.csv", "output_etapa7.recomendacoes_categoria_n1"),
+    (E7 / "recomendacoes_lojas.csv", "output_etapa7.recomendacoes_lojas"),
+    (E7 / "reprecificacao_candidatos.csv", "output_etapa7.reprecificacao_candidatos"),
+    (E7 / "priorizacao_acoes.csv", "output_etapa7.priorizacao_acoes"),
+    (E7 / "recomendacoes_melhoria.csv", "output_etapa7.recomendacoes_melhoria"),
+    (E7 / "validacoes_etapa7.csv", "output_etapa7.validacoes_etapa7"),
+    (E7 / "autoaudit_etapa7.csv", "output_etapa7.autoaudit_etapa7"),
 ]
 for path, tabela in artefatos_dicionario:
     if path.exists():
@@ -1250,13 +1386,18 @@ inconsistencias = [
                  "é incluir id_transacao, número do item da transação e canal/origem para calcular "
                  "ticket médio real, itens por cupom e análises de cesta.",
      "status": "documentado"},
-    {"titulo": "Queda sustentada de volume em 2025",
-     "achado": f"As linhas de venda caem de forma contínua ao longo de 2025; o ano fecha com "
+    {"titulo": "Queda sustentada de volume em 2025 (hipótese: mercado × captura)",
+     "achado": f"As linhas de venda caem de forma quase monotônica ao longo de 2025; o ano fecha com "
                f"{fmt_int(tx25)} linhas contra {fmt_int(tx24)} em 2024 (−{fmt_pct(abs(tx25/tx24-1)*100)}) "
-               f"e receita de {fmt_milhao(r25)} vs {fmt_milhao(r24)} ({fmt_pct(yoy)}).",
-     "hipotese": "Os 24 meses estão completos (não é gap de dados) — a queda é uma tendência real. "
-                 "Possíveis causas: retração de mercado regional, descontinuação de operações ou "
-                 "migração de canal. Exige confirmação com a área comercial.",
+               f"e receita de {fmt_milhao(r25)} vs {fmt_milhao(r24)} ({fmt_pct(yoy)}). O nº de linhas cai "
+               f"na mesma proporção da receita.",
+     "hipotese": "Ainda que os 24 meses estejam presentes, a queda proporcional de linhas é assinatura "
+                 "possível de TRUNCAMENTO DE CAPTURA (extração/carga incompleta dos meses finais), não "
+                 "necessariamente retração de mercado. É uma HIPÓTESE A CONFIRMAR: o diagnóstico mensal e "
+                 "por loja (outputs/etapa3/diagnostico_captura_mensal.csv e diagnostico_captura_lojas_mensal.csv) "
+                 "testa se a queda é homogênea entre lojas (mercado) ou se lojas 'somem' da base (captura). "
+                 "Como essa base alimenta VENDA_MEDIA_MES e a projeção de compras das Etapas 6/7, a incerteza "
+                 "se propaga para a demanda projetada. Exige confirmação com a origem dos dados / área comercial.",
      "status": "pendente"},
     {"titulo": "Queda generalizada por categoria; Eletros lidera a perda",
      "achado": f"Todas as categorias recuam em 2025. D — Eletros cai {fmt_pct(eletros['var'])} "
@@ -1705,6 +1846,97 @@ if (E6 / "plano_compras_total_universo.csv").exists():
         "autoaudit": audit_rows6,
     }
 
+etapa7 = None
+if (E7 / "recomendacoes_acao_universo.csv").exists():
+    e7_acao = pd.read_csv(E7 / "recomendacoes_acao_universo.csv", encoding="utf-8-sig")
+    e7_cat = pd.read_csv(E7 / "recomendacoes_categoria_n1.csv", encoding="utf-8-sig")
+    e7_prio = pd.read_csv(E7 / "priorizacao_acoes.csv", encoding="utf-8-sig", low_memory=False)
+    e7_audit = pd.read_csv(E7 / "autoaudit_etapa7.csv", encoding="utf-8-sig")
+    e7_valid = pd.read_csv(E7 / "validacoes_etapa7.csv", encoding="utf-8-sig")
+
+    ORDEM_ACAO = ["COMPRAR", "REPRECIFICAR", "PROMOVER", "DESCONTINUAR"]
+
+    def fmt_valor7(v):
+        return "sem custo" if pd.isna(v) else fmt_milhao(float(v))
+
+    def fmt_valor_acao7(v, acao):
+        return "nao aplicavel" if acao == "REPRECIFICAR" else fmt_valor7(v)
+
+    def pares_acao(universo, acao):
+        m = (e7_acao["UNIVERSO"] == universo) & (e7_acao["ACAO_PRIMARIA"] == acao)
+        return int(e7_acao.loc[m, "PARES"].iloc[0]) if m.any() else 0
+
+    def valor_acao(universo, acao):
+        m = (e7_acao["UNIVERSO"] == universo) & (e7_acao["ACAO_PRIMARIA"] == acao)
+        return float(e7_acao.loc[m, "VALOR_FINANCEIRO_CONHECIDO"].iloc[0]) if m.any() else float("nan")
+
+    acao_rows7 = []
+    for universo in ["REDE_FISICA_SEM_LOJA93", "LOJA_93_ATACADO_B2B"]:
+        sub = e7_acao[e7_acao["UNIVERSO"] == universo].copy()
+        sub["_ord"] = sub["ACAO_PRIMARIA"].map({a: i for i, a in enumerate(ORDEM_ACAO)})
+        for r in sub.sort_values("_ord").itertuples():
+            acao_rows7.append({
+                "universo": str(r.UNIVERSO),
+                "acao": str(r.ACAO_PRIMARIA),
+                "pares": fmt_int(float(r.PARES)),
+                "skus": fmt_int(float(r.SKUS)),
+                "pares_valor": fmt_int(float(r.PARES_COM_VALOR)),
+                "valor": fmt_valor_acao7(r.VALOR_FINANCEIRO_CONHECIDO, str(r.ACAO_PRIMARIA)),
+                "cobertura": fmt_pct(float(r.COBERTURA_VALOR_PCT)) if pd.notna(r.COBERTURA_VALOR_PCT) else "n/d",
+            })
+
+    cat_rows7 = []
+    cat_fis7 = e7_cat[e7_cat["UNIVERSO"] == "REDE_FISICA_SEM_LOJA93"].copy()
+    cat_fis7["_ord"] = cat_fis7["ACAO_PRIMARIA"].map({a: i for i, a in enumerate(ORDEM_ACAO)})
+    for acao in ORDEM_ACAO:
+        top = cat_fis7[cat_fis7["ACAO_PRIMARIA"] == acao].sort_values("PARES", ascending=False).head(4)
+        for r in top.itertuples():
+            cat_rows7.append({
+                "acao": acao,
+                "categoria": str(r.NIVEL_1),
+                "pares": fmt_int(float(r.PARES)),
+                "valor": fmt_valor_acao7(r.VALOR_FINANCEIRO_CONHECIDO, acao),
+            })
+
+    prio_rows7 = []
+    prio_visao7 = pd.concat([
+        e7_prio[e7_prio["UNIVERSO_OPERACIONAL"] == "REDE_FISICA_SEM_LOJA93"].head(14),
+        e7_prio[e7_prio["UNIVERSO_OPERACIONAL"] == "LOJA_93_ATACADO_B2B"].head(4),
+    ], ignore_index=True)
+    for r in prio_visao7.itertuples():
+        prio_rows7.append({
+            "escopo": str(r.UNIVERSO_OPERACIONAL),
+            "rank": str(int(r.RANK_EXECUCAO)),
+            "faixa": str(r.FAIXA_PRIORIDADE),
+            "acao": str(r.ACAO_PRIMARIA),
+            "loja": f"{int(r.COD_EMPRESA)} ({r.CD_CIDADE}-{r.CD_ESTADO})",
+            "codigo": str(int(r.CODIGO)),
+            "desc": str(r.DESCRICAO).strip(),
+            "valor": fmt_valor_acao7(r.VALOR_ACAO_PRIMARIA, str(r.ACAO_PRIMARIA)),
+        })
+
+    audit_rows7 = [{
+        "risco": str(r.RISCO),
+        "controle": str(r.CONTROLE_APLICADO),
+        "evidencia": str(r.EVIDENCIA),
+        "risco_remanescente": str(r.RISCO_REMANESCENTE),
+    } for r in e7_audit.itertuples()]
+
+    etapa7 = {
+        "kpis": {
+            "comprar": fmt_int(pares_acao("REDE_COMPLETA", "COMPRAR")),
+            "reprecificar": fmt_int(pares_acao("REDE_COMPLETA", "REPRECIFICAR")),
+            "promover": fmt_int(pares_acao("REDE_COMPLETA", "PROMOVER")),
+            "descontinuar": fmt_int(pares_acao("REDE_COMPLETA", "DESCONTINUAR")),
+            "valor_encalhe": fmt_valor7(valor_acao("REDE_COMPLETA", "PROMOVER")),
+            "validacoes": f"{int((e7_valid['STATUS'] == 'OK').sum())}/{len(e7_valid)} OK",
+        },
+        "acoes": acao_rows7,
+        "categorias": cat_rows7,
+        "prioridades": prio_rows7,
+        "autoaudit": audit_rows7,
+    }
+
 DATA = {
     "kpis": kpis,
     "status_antes": status_antes,
@@ -1720,6 +1952,7 @@ DATA = {
     "etapa4": etapa4,
     "etapa5": etapa5,
     "etapa6": etapa6,
+    "etapa7": etapa7,
     "gerado_em": datetime.now().strftime("%d/%m/%Y %H:%M"),
 }
 

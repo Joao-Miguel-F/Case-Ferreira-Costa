@@ -19,12 +19,14 @@ Análise completa de 24 meses de dados de uma rede de varejo de materiais de con
 │   ├── 04_etapa4_cobertura_categoria_loja.ipynb # 📘 notebook executado (cobertura por categoria/loja)
 │   ├── 05_etapa5_precificacao_margem.ipynb  # 📘 notebook executado (margem, desconto e dispersão de preço)
 │   ├── 06_etapa6_projecao_compras.ipynb     # 📘 notebook executado (projeção de compras)
+│   ├── 07_etapa7_recomendacoes_finais.ipynb # 📘 notebook executado (recomendações finais)
 │   ├── etapa1_entendimento_dados.py         # script-fonte de referência
 │   ├── etapa2_estoque_projetado.py          # script-fonte de referência (corrigido)
 │   ├── etapa3_desempenho_vendas.py          # script-fonte de referência
 │   ├── etapa4_cobertura_categoria_loja.py   # script-fonte de referência
 │   ├── etapa5_precificacao_margem.py        # script-fonte de referência
-│   └── etapa6_projecao_compras.py           # script-fonte de referência
+│   ├── etapa6_projecao_compras.py           # script-fonte de referência
+│   └── etapa7_recomendacoes_finais.py       # script-fonte de referência
 │
 ├── src/
 │   └── utils.py                    # Funções e constantes compartilhadas
@@ -39,6 +41,7 @@ Análise completa de 24 meses de dados de uma rede de varejo de materiais de con
 │   ├── etapa4/                     # Cobertura por categoria/loja e priorização de reposição
 │   ├── etapa5/                     # Margem, preço de lista/desconto, dispersão e candidatos a repricing
 │   ├── etapa6/                     # Projeção de compras, priorização e validações
+│   ├── etapa7/                     # Recomendações finais (promover/descontinuar/reprecificar/comprar) e fila priorizada
 │   └── relatorio_qualidade_dados.html       # 📊 dashboard executivo (abre no navegador)
 │
 ├── requirements.txt
@@ -49,11 +52,19 @@ Análise completa de 24 meses de dados de uma rede de varejo de materiais de con
 
 ## Como executar
 
+> **Insumo bruto da Etapa 1:** a Etapa 1 lê `data/raw/fato_vendas_1.csv` (~59 MB), que **não é
+> versionado** por tamanho (ver [`data/raw/README.md`](data/raw/README.md)). Coloque esse arquivo
+> (entregue à parte com o case) em `data/raw/` antes de rodar a Etapa 1. **As Etapas 2–7 não
+> precisam dele** — elas partem dos Parquets já versionados em `data/processed/`, então é possível
+> reproduzir toda a análise a partir do passo 3 sem o CSV bruto de vendas.
+
 ```bash
 # 1. Instalar dependências
 pip install -r requirements.txt
 
 # 2. Rodar Etapa 1 (limpeza e tratamento — gera os Parquets em data/processed/)
+#    Requer data/raw/fato_vendas_1.csv (ver nota acima). Pule este passo para
+#    reproduzir a partir dos Parquets já versionados.
 cd notebooks
 python etapa1_entendimento_dados.py
 
@@ -72,35 +83,42 @@ python etapa5_precificacao_margem.py
 # 7. Rodar Etapa 6 (projeção de compras para 90 dias)
 python etapa6_projecao_compras.py
 
-# 8. (opcional) Reexecutar os notebooks de ponta a ponta
+# 8. Rodar Etapa 7 (recomendações finais e plano de execução comercial)
+python etapa7_recomendacoes_finais.py
+
+# 9. (opcional) Reexecutar os notebooks de ponta a ponta
 jupyter nbconvert --to notebook --execute --inplace 01_etapa1_entendimento_dados.ipynb
 jupyter nbconvert --to notebook --execute --inplace 02_etapa2_estoque_projetado.ipynb
 jupyter nbconvert --to notebook --execute --inplace 03_etapa3_desempenho_vendas.ipynb
 jupyter nbconvert --to notebook --execute --inplace 04_etapa4_cobertura_categoria_loja.ipynb
 jupyter nbconvert --to notebook --execute --inplace 05_etapa5_precificacao_margem.ipynb
 jupyter nbconvert --to notebook --execute --inplace 06_etapa6_projecao_compras.ipynb
+jupyter nbconvert --to notebook --execute --inplace 07_etapa7_recomendacoes_finais.ipynb
 
-# 9. (opcional) Regenerar o dashboard HTML a partir dos CSVs
+# 10. (opcional) Regenerar o dashboard HTML a partir dos CSVs
 cd ..
 python scripts/gerar_dashboard.py
 ```
 
-> **Nota:** os arquivos `data/processed/*.parquet` já estão incluídos no repositório para facilitar a reprodução das análises sem precisar rodar a Etapa 1.
+> **Nota:** os arquivos `data/processed/*.parquet` já estão incluídos no repositório para facilitar a
+> reprodução das Etapas 2–7 sem precisar do CSV bruto de vendas nem rodar a Etapa 1. A Etapa 1 só é
+> necessária para regerar os Parquets a partir do dado bruto — ver a nota sobre `data/raw/fato_vendas_1.csv`.
 
 ### Abrir os entregáveis de leitura
 
 - **Dashboard executivo:** basta abrir `outputs/relatorio_qualidade_dados.html` no navegador
   (duplo-clique). É autocontido — não precisa de servidor nem instalação. O dashboard consolida
   qualidade de dados, estoque projetado, desempenho de vendas, cobertura por categoria/loja,
-  precificação e margem, e recomendações de melhoria. O
+  precificação e margem, projeção de compras e recomendações finais de execução comercial. O
   dicionário exibido no dashboard também é salvo em `outputs/dicionario_dados_projeto.csv` e cobre
   bases tratadas e principais outputs analíticos.
 - **Notebooks executados:** `notebooks/01_etapa1_entendimento_dados.ipynb`,
   `notebooks/02_etapa2_estoque_projetado.ipynb`,
   `notebooks/03_etapa3_desempenho_vendas.ipynb`,
-  `notebooks/04_etapa4_cobertura_categoria_loja.ipynb` e
-  `notebooks/05_etapa5_precificacao_margem.ipynb` e
-  `notebooks/06_etapa6_projecao_compras.ipynb` já trazem todos os outputs salvos — podem ser
+  `notebooks/04_etapa4_cobertura_categoria_loja.ipynb`,
+  `notebooks/05_etapa5_precificacao_margem.ipynb`,
+  `notebooks/06_etapa6_projecao_compras.ipynb` e
+  `notebooks/07_etapa7_recomendacoes_finais.ipynb` já trazem todos os outputs salvos — podem ser
   lidos direto no GitHub, VS Code ou Jupyter, sem rodar nada.
 
 ---
@@ -133,7 +151,7 @@ python scripts/gerar_dashboard.py
 **Achados principais:**
 - 80% da receita (R$385M) vem de SKUs sem compra registrada no período → estoque inicial é o principal ativo operacional
 - Loja 93 representa 31,8% da receita com apenas 12% dos SKUs → operação B2B/atacado
-- 2.549 SKUs com variação de preço >30% → possível inconsistência de precificação
+- 2.619 SKUs com amplitude de preço bruto >30% → leitura ingênua de possível inconsistência de precificação (refinada na Etapa 5 para **46 SKUs** por CV, ao separar embalagem e atacado)
 
 ### Etapa 2 — Estoque Projetado e Cobertura
 
@@ -165,7 +183,7 @@ Foram gerados rankings por receita e quantidade em unidade de armazenagem, curva
 - Produto líder por receita na rede completa: `467774` — COND.SPLIT 9000 COND.S3UQ09 INV. 143, com R$ 12,5M.
 - Produto líder por receita na rede física: `432048` — MASSA CORRIDA PVA CORAL PLS 25KG, com R$ 9,9M.
 - Curva A: 522 SKUs concentram 80,0% da receita na rede completa; sem Loja 93, são 713 SKUs.
-- A receita caiu 54,2% em 2025 vs 2024 na rede completa e 47,6% na rede física sem Loja 93.
+- **Queda de 2025 — hipótese a confirmar, não achado fechado.** A receita recua 54,2% em 2025 vs 2024 na rede completa e 47,6% na rede física, de forma quase monotônica, com o nº de linhas caindo na mesma proporção. Essa queda proporcional é assinatura *possível* de **truncamento de captura** (extração incompleta dos meses finais), não necessariamente retração de mercado — ver diagnóstico em [`outputs/etapa3/diagnostico_captura_mensal.csv`](outputs/etapa3/diagnostico_captura_mensal.csv) e [`diagnostico_captura_lojas_mensal.csv`](outputs/etapa3/diagnostico_captura_lojas_mensal.csv): se a queda é homogênea entre lojas → mercado; se lojas "somem" da base → captura. **Impacto:** essa base alimenta `VENDA_MEDIA_MES` e a projeção de compras das Etapas 6/7, então a incerteza se propaga para a demanda projetada (ler as quantidades como ordem de prioridade, não previsão fechada).
 - A maior contribuição bruta para a queda de 2025 veio de `D - ELETROS` e, por loja, da Loja 93.
 
 **Limitações e cuidados:** a análise é descritiva; picos e quedas não são atribuídos a causa sem evidência adicional. `TRANSACOES` representa linhas de venda, não cupons únicos, pois a base não tem id de cupom/pedido/nota. Ticket médio = proxy de receita por linha de venda; preço médio = receita por unidade de armazenagem. A Loja 93 é segregada para evitar mistura entre atacado/B2B e rede física.
@@ -208,10 +226,11 @@ A Etapa 5 calcula a margem bruta realizada (R$ e %), markup e custo médio por S
 
 **Achados principais:**
 - Custo de compra válido existe só para **261 SKUs** (de 2.729 vendidos): **R$ 79,1M, 16,4% da receita** na rede completa (15,2% na rede física). A margem realizada vale apenas para esse subconjunto — análogo ao "88% vendem sem compra registrada" das Etapas 1/2.
+- **`fato_compras_2.csv` parece PARCIAL** — 4 lojas com venda (**1, 4, 8 e 9**) não têm nenhuma compra no arquivo e **10 categorias inteiras** aparecem com 100% da receita sem custo (ex.: `R - ELETRONICOS`, `S - TINTAS E QUIMICOS`, `F - FERRAMENTAS`). A baixa cobertura de custo é, portanto, **provável lacuna de extração a levantar com a origem dos dados**, não característica do negócio. Detalhes em [`LIMITACOES.md`](LIMITACOES.md).
 - Margem bruta % média ponderada (itens com custo): **47,6% na rede completa** (markup 1,91×) e **49,8% na rede física** (markup 1,99×).
 - Maior margem por categoria na rede física (cobertura ≥10%): `C - PISOS E REVESTIMENTOS` (56,1%); menor: `D - ELETROS` (42,8%). `B - UTILIDADES DOMÉSTICAS` aparece com **margem negativa** (−15,4%) no subconjunto com custo — louças/porcelanas de baixo giro vendidas abaixo do custo.
-- Desconto efetivo médio ponderado na rede física: **17,4%**; **2.264** combinações loja×produto×embalagem vendem **acima da lista** (desconto negativo → tabela possivelmente desatualizada).
-- Dispersão de preço entre lojas (rede física, embalagem 0): apenas **46 SKUs com CV>30%** — bem abaixo da leitura ingênua de "2.549 SKUs com variação >30%", que misturava embalagem e atacado.
+- Desconto efetivo médio ponderado na rede física: **17,4%**; **2.079** combinações loja×produto×embalagem vendem **acima da lista** (desconto negativo → tabela possivelmente desatualizada). Contagem de itens *estritamente* acima da lista, com tolerância de arredondamento para não contar empates preço = lista.
+- Dispersão de preço entre lojas (rede física, embalagem 0): apenas **46 SKUs com CV>30%** — bem abaixo da leitura ingênua de "2.619 SKUs com amplitude de preço bruto >30%" (métrica diferente: amplitude do preço bruto entre linhas, misturando embalagem e atacado).
 - **3.260** candidatos a repricing na rede física (326 de prioridade ALTA), combinando margem baixa/negativa, desconto alto e preço fora da faixa da rede. O sinal de margem é calculado no grão loja×produto×embalagem.
 
 **Revisão de qualidade (autoaudit):** três armadilhas tratadas explicitamente — (1) **margens absurdas por erro de unidade**: preço e custo normalizados para a unidade de armazenagem mantêm todos os 261 markups na faixa sanitária (0,65×–4,76×), prevenindo o falso outlier de "venda em caixa"; (2) **custo de SKU sem compra vazando para a margem**: 2.468 SKUs (R$ 403,4M, 83,6% da receita) ficariam com margem fabricada se o custo fosse imputado — corrigido restringindo a margem aos SKUs com custo próprio; (3) **mistura de embalagem na dispersão**: a leitura ingênua marcava ~2,6k SKUs com variação >30%; separando embalagem e atacado, caem para 46 (pelo CV).
@@ -254,6 +273,37 @@ python etapa6_projecao_compras.py
 
 Arquivos auditáveis em `outputs/etapa6/`: `plano_compras_sku_loja.csv`, `plano_compras_total_universo.csv`, `plano_compras_categorias_n1.csv`, `plano_compras_lojas.csv`, `priorizacao_compras.csv`, `recomendacoes_melhoria.csv`, `validacoes_etapa6.csv`, `autoaudit_etapa6.csv`, `resumo_etapa6.md` e `documentacao_tecnica_etapa6.md`.
 
+### Etapa 7 — Recomendações Finais e Plano de Execução Comercial
+
+A Etapa 7 é a **síntese de decisão**: consome os artefatos auditáveis das Etapas 3-6 (sem recalcular base crua) e classifica cada par loja×SKU em uma de quatro ações comerciais — **comprar**, **reprecificar**, **promover/queimar estoque** ou **descontinuar**. Um mesmo par pode disparar mais de um *sinal*, mas recebe **uma ação primária** por precedência (`DESCONTINUAR > PROMOVER > REPRECIFICAR > COMPRAR`) para que capital e quantidade **não sejam contados em duas ações**. Os três universos ficam segregados e fecham em `REDE_COMPLETA`. A base reaproveitada é o `plano_compras_sku_loja.csv` da Etapa 6, que já traz o status de cobertura recalculado por universo (corrigindo a Loja 93), giro, curva ABC, custo e margem.
+
+**Lógica de classificação:**
+- **Descontinuar** — par em `SEM VENDA` com estoque parado (>0), curva ABC conhecida e curva ABC ≠ A (capital imobilizado a delistar).
+- **Promover/queimar** — estoque encalhado que ainda gira (`SAUDÁVEL` com cobertura > 180 dias), campeão curva A parado ou par parado com curva ausente que precisa de revisão antes de qualquer saída.
+- **Reprecificar** — candidatos da Etapa 5 (faixa ALTA/MÉDIA), separando **sinal de margem auditável** (item com custo e margem baixa/negativa) de **sinal de preço/lista** (desconto alto ou preço fora da faixa, com ou sem custo).
+- **Comprar** — fila de compra da Etapa 6 (`QTD_RECOMENDADA_ARM > 0`).
+
+**Achados principais:**
+- Rede física sem Loja 93: **19.126** pares a comprar (R$ 4,6M de investimento conhecido), **956** a reprecificar, **752** a promover/queimar (R$ 6,7M de estoque encalhado com custo) e **434** a descontinuar (R$ 0,4M de capital imobilizado com custo).
+- Loja 93/B2B (escopo próprio): **263** a comprar, **33** a reprecificar, **20** a promover e **29** a descontinuar.
+- **Guarda-corpo do campeão e curva ausente:** **132** pares curva A parados e **3** pares sem curva ABC foram protegidos do descontinue e roteados para escoar/transferir/revisar — nenhum item curva A ou sem curva entra em descontinuar.
+- **Repricing (revisão interna):** dos **1.011** candidatos loja×SKU casados na base, **41** têm sinal de margem **auditável**; **75** têm custo válido mas apenas sinal de preço/lista; **895** não têm custo e são tratados como ajuste de preço/lista, não como prova de margem.
+- **Anti-dupla-contagem:** **990** pares disparam mais de um sinal; cada um entra uma única vez na fila via ação primária. As reconciliações com as etapas-fonte usam os *sinais* (o sinal de comprar bate com os 20.357 pares da Etapa 6; o de reprecificar bate com os candidatos ALTA/MÉDIA da Etapa 5).
+- **23/23 validações OK** (receita fecha com a Etapa 3; `REDE_COMPLETA = física + Loja 93` por ação; curva ausente não descontinua; pares sem métrica ficam em prioridade baixa; financeiro nunca imputado sem custo).
+
+**Autoaudit / armadilhas tratadas:** (1) descontinuar campeão histórico só por giro recente baixo ou curva ausente → curva A/ausente protegido; (2) promover/reprecificar item como se a margem fosse conhecida sem evidência → separação de sinais e financeiro só com custo; (3) misturar a Loja 93 nas recomendações de varejo → escopo próprio com status B2B recalculado e curva de guarda-corpo; (4) dupla contagem de par que dispara mais de uma ação → ação primária por precedência.
+
+**Limitações e cuidados:** estoque projetado não é contagem física — descontinuar/promover exige validar saldo e obsolescência antes de agir; giro usa média dos meses com venda, e itens sazonais podem parecer parados fora de estação (cruzar com a sazonalidade da Etapa 3); o valor financeiro conhecido não é budget total, pois exclui itens sem custo (`NaN` = não avaliado ≠ `0`); a fila diz **o que** fazer e **em que ordem**, não **quanto** descontar nem o lote de recompra.
+
+**Como executar:**
+
+```bash
+cd notebooks
+python etapa7_recomendacoes_finais.py
+```
+
+Arquivos auditáveis em `outputs/etapa7/`: `recomendacoes_sku_loja.csv`, `recomendacoes_acao_universo.csv`, `recomendacoes_categoria_n1.csv`, `recomendacoes_lojas.csv`, `reprecificacao_candidatos.csv`, `priorizacao_acoes.csv`, `recomendacoes_melhoria.csv`, `validacoes_etapa7.csv`, `autoaudit_etapa7.csv`, `resumo_etapa7.md` e `documentacao_tecnica_etapa7.md`.
+
 ---
 
 ## Revisão de qualidade e correções
@@ -283,7 +333,6 @@ notebooks executados
 
 ## Próximas etapas (planejadas)
 
-- **Etapa 7** — Recomendações finais: promoções, descontinuações, repricing e plano de execução comercial
 - **Etapa 8** — Apresentação executiva
 
 ---
@@ -303,6 +352,11 @@ notebooks executados
 
 ## Premissas, limitações conhecidas e próximos passos
 
+> 📋 As limitações materiais do projeto estão consolidadas em [`LIMITACOES.md`](LIMITACOES.md)
+> (cobertura de custo de 16,4%, base de compras provavelmente parcial, queda de 2025 como hipótese
+> a confirmar, entre outras). Abaixo, o resumo dos pontos que eu revisitaria antes de tratar os
+> números como definitivos.
+
 Decisões assumidas de forma transparente, com os pontos que eu revisitaria antes de tratar os números como definitivos:
 
 - **Velocidade de venda (`VENDA_MEDIA_MES`) é a média dos meses *com* venda, não dos 24 meses.**
@@ -318,9 +372,13 @@ Decisões assumidas de forma transparente, com os pontos que eu revisitaria ante
 - **Loja 93 (atacado)** entra nos cálculos de receita e estoque (são fatos do par), mas é excluída
   da *referência de consumo da rede física* na cobertura em dias. Isso pode gerar pares da loja 93
   com receita alta e status "Sem Venda" — comportamento esperado, não erro.
-- **Queda de 2025 (−54% de receita YoY)** ocorre com os 24 meses presentes (não é gap de dados): o
-  volume cai mês a mês ao longo de 2025. Precisa de confirmação de causa (retração de mercado,
-  descontinuação de operações ou mudança de captura) — ver aba *Inconsistências* do dashboard.
+- **Queda de 2025 (−54% de receita YoY) é uma HIPÓTESE A CONFIRMAR, não um achado fechado.** Os 24
+  meses estão presentes, mas o volume cai quase monotonicamente ao longo de 2025 e o nº de linhas cai
+  na mesma proporção — isso é assinatura *possível* de **truncamento de captura** (extração incompleta),
+  tanto quanto de retração de mercado. O diagnóstico em `outputs/etapa3/diagnostico_captura_mensal.csv`
+  e `diagnostico_captura_lojas_mensal.csv` testa as duas hipóteses (queda homogênea entre lojas → mercado;
+  lojas sumindo da base → captura). Como essa base alimenta `VENDA_MEDIA_MES` e a projeção das Etapas 6/7,
+  a incerteza se propaga para a demanda projetada. Ver também aba *Inconsistências* do dashboard.
 
 **Próximos passos sugeridos:** (1) cobertura em dias com média sobre 24 meses + análise de
 sensibilidade do status; (2) incorporar transferências entre lojas para fechar o gap dos SKUs sem

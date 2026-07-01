@@ -98,6 +98,11 @@ def curva_abc(vendas: pd.DataFrame, coluna_agrup: str = "CODIGO") -> pd.DataFram
     A = top 80% da receita cumulativa
     B = próximos 15%
     C = últimos 5%
+
+    Convenção do corte: os limites usam intervalos fechados à direita
+    (`pd.cut` bins [0, 80, 95, 100]). O item cuja receita acumulada *cruza* 80%
+    cai em **B**, não em A — por isso a classe A pode somar ligeiramente menos
+    que 80% da receita. Mesma regra aplicada na Etapa 3 (`classifica_abc`).
     """
     rec = (
         vendas.groupby(coluna_agrup)["RECEITA"]
