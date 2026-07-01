@@ -30,6 +30,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 from utils import (PROCESSED, OUTPUTS, LOJA_ATACADO, load_vendas, load_compras,
                    load_estoque_inicial, load_dim_produto, load_dim_precos)
+# Formatação pt-BR e SSOT de KPI: fonte única em src/kpis.py (ver Fase 1 / SSOT).
+from kpis import (fmt_int, fmt_milhao, fmt_pct, fmt_reais,  # noqa: E402
+                  load_kpis, get_kpi, fmt_kpi)
 
 E1 = OUTPUTS / "etapa1"
 E2 = OUTPUTS / "etapa2"
@@ -41,18 +44,11 @@ E7 = OUTPUTS / "etapa7"
 STATUS_ORDER = ["EM RUPTURA", "CRÍTICO", "ATENÇÃO", "SAUDÁVEL", "SEM VENDA"]
 
 # ── formatação pt-BR ────────────────────────────────────────────────────────
-def fmt_int(n):
-    return f"{int(round(n)):,}".replace(",", ".")
+# fmt_int / fmt_milhao / fmt_pct / fmt_reais agora vêm de src/kpis.py (SSOT),
+# fonte única de formatação reaproveitada pelo dashboard, resumos e linter.
 
-def fmt_milhao(v):
-    return "R$ " + f"{v/1e6:,.1f}".replace(",", "X").replace(".", ",").replace("X", ".") + "M"
-
-def fmt_pct(v, dec=1):
-    return f"{v:.{dec}f}".replace(".", ",") + "%"
-
-def fmt_reais(v, dec=2):
-    s = f"{v:,.{dec}f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    return "R$ " + s
+# SSOT consolidado (outputs/kpis.json). Números narrados vêm daqui, não hardcoded.
+KPIS = load_kpis()
 
 # ============================================================================
 # TEMPLATE HTML (CSS + JS inline; Chart.js via CDN; dados injetados como JSON)
@@ -1454,7 +1450,8 @@ bugs = [
      "correcao": "Skeleton = união dos pares de estoque inicial ∪ vendas ∪ compras. Pares sem foto "
                  "inicial entram com ESTOQUE_INICIAL = 0 (lógica conservadora da Etapa 1).",
      "antes": "25.330 pares na cobertura",
-     "depois": "28.721 pares na cobertura (+3.391)",
+     "depois": f"{fmt_int(get_kpi('e2.cobertura.total_pares', kpis=KPIS))} pares na cobertura "
+               f"(+{fmt_int(get_kpi('e2.cobertura.total_pares', kpis=KPIS) - 25330)})",
      "impacto": "+3.379 pares com venda voltam ao radar, rastreando +R$ 87,5M (18,1% da receita) "
                 "antes invisíveis no estoque projetado."},
     {"n": 3, "sev": "Médio",

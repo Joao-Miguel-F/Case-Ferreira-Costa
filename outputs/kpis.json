@@ -1,0 +1,578 @@
+{
+  "e1.compras_sem_preco.pct": {
+    "descricao": "% de linhas de compra sem preço",
+    "fonte": "etapa1",
+    "unidade": "%",
+    "valor": 9.475951184493898
+  },
+  "e1.compras_sem_preco.registros": {
+    "descricao": "Linhas de compra sem preço (excluídas do CMV)",
+    "fonte": "etapa1",
+    "unidade": "linhas",
+    "valor": 132
+  },
+  "e1.estoque_nulo.pct": {
+    "descricao": "% de registros de estoque inicial sem valor",
+    "fonte": "etapa1",
+    "unidade": "%",
+    "valor": 5.246742992499013
+  },
+  "e1.estoque_nulo.registros": {
+    "descricao": "Registros de estoque inicial sem valor (tratados como 0)",
+    "fonte": "etapa1",
+    "unidade": "reg",
+    "valor": 1329
+  },
+  "e1.integridade.nulos_dimensoes": {
+    "descricao": "Nulos em NIVEL_1/CD_CIDADE após o join",
+    "fonte": "etapa1",
+    "unidade": "regs",
+    "valor": 0
+  },
+  "e1.integridade.orfaos": {
+    "descricao": "Órfãos de integridade referencial (vendas/compras sem dimensão)",
+    "fonte": "etapa1",
+    "unidade": "regs",
+    "valor": 0
+  },
+  "e1.lojas": {
+    "descricao": "Lojas na base (físicas + 92 + 93 atacado)",
+    "fonte": "etapa1",
+    "unidade": "lojas",
+    "valor": 11
+  },
+  "e1.receita_total": {
+    "descricao": "Receita total da rede completa (24 meses)",
+    "fonte": "etapa1",
+    "unidade": "R$",
+    "valor": 482515748.11584336
+  },
+  "e1.skus_ativos": {
+    "descricao": "SKUs ativos (com venda no período)",
+    "fonte": "etapa1",
+    "unidade": "SKUs",
+    "valor": 2729
+  },
+  "e1.transacoes": {
+    "descricao": "Linhas de venda (proxy de transações)",
+    "fonte": "etapa1",
+    "unidade": "linhas",
+    "valor": 1090390
+  },
+  "e2.cobertura.total_pares": {
+    "descricao": "Pares loja×produto no snapshot de cobertura (dez/2025)",
+    "fonte": "etapa2",
+    "unidade": "pares",
+    "valor": 28721
+  },
+  "e2.ruptura.pares": {
+    "descricao": "Pares em ruptura (estoque projetado ≤ 0)",
+    "fonte": "etapa2",
+    "unidade": "pares",
+    "valor": 26140
+  },
+  "e2.ruptura.pct": {
+    "descricao": "% de pares em ruptura",
+    "fonte": "etapa2",
+    "unidade": "%",
+    "valor": 91.01354409665402
+  },
+  "e2.ruptura_critico.pares": {
+    "descricao": "Pares em ruptura ou crítico",
+    "fonte": "etapa2",
+    "unidade": "pares",
+    "valor": 26713
+  },
+  "e2.ruptura_critico.pct": {
+    "descricao": "% de pares em ruptura ou crítico",
+    "fonte": "etapa2",
+    "unidade": "%",
+    "valor": 93.00859997910936
+  },
+  "e2.status.atencao": {
+    "descricao": "Pares em status ATENÇÃO (31–90 dias)",
+    "fonte": "etapa2",
+    "unidade": "pares",
+    "valor": 391
+  },
+  "e2.status.critico": {
+    "descricao": "Pares em status CRÍTICO (1–30 dias de cobertura)",
+    "fonte": "etapa2",
+    "unidade": "pares",
+    "valor": 573
+  },
+  "e2.status.saudavel": {
+    "descricao": "Pares em status SAUDÁVEL (>90 dias)",
+    "fonte": "etapa2",
+    "unidade": "pares",
+    "valor": 955
+  },
+  "e2.status.sem_venda": {
+    "descricao": "Pares SEM VENDA (capital imobilizado)",
+    "fonte": "etapa2",
+    "unidade": "pares",
+    "valor": 662
+  },
+  "e3.curva_a.completa": {
+    "descricao": "SKUs na curva A — rede completa",
+    "fonte": "etapa3",
+    "unidade": "SKUs",
+    "valor": 522
+  },
+  "e3.curva_a.fisica": {
+    "descricao": "SKUs na curva A — rede física",
+    "fonte": "etapa3",
+    "unidade": "SKUs",
+    "valor": 713
+  },
+  "e3.curva_a.pct_completa": {
+    "descricao": "% da receita concentrada na curva A — rede completa",
+    "fonte": "etapa3",
+    "unidade": "%",
+    "valor": 79.98717787805512
+  },
+  "e3.loja93.receita_media_linha": {
+    "descricao": "Receita média por linha de venda — Loja 93",
+    "fonte": "etapa3",
+    "unidade": "R$",
+    "valor": 6160.068825026571
+  },
+  "e3.loja93.receita_pct": {
+    "descricao": "Participação da Loja 93 na receita da rede completa",
+    "fonte": "etapa3",
+    "unidade": "%",
+    "valor": 31.76704453101833
+  },
+  "e3.loja93.transacoes_pct": {
+    "descricao": "Participação da Loja 93 nas linhas de venda",
+    "fonte": "etapa3",
+    "unidade": "%",
+    "valor": 2.282027531433707
+  },
+  "e3.queda_2025.completa": {
+    "descricao": "Variação de receita 2025 vs 2024 — rede completa",
+    "fonte": "etapa3",
+    "unidade": "%",
+    "valor": -54.16270409406002
+  },
+  "e3.queda_2025.fisica": {
+    "descricao": "Variação de receita 2025 vs 2024 — rede física",
+    "fonte": "etapa3",
+    "unidade": "%",
+    "valor": -47.60415301714983
+  },
+  "e3.receita.rede_completa": {
+    "descricao": "Receita total — rede completa",
+    "fonte": "etapa3",
+    "unidade": "R$",
+    "valor": 482515748.11584336
+  },
+  "e3.receita.rede_fisica": {
+    "descricao": "Receita total — rede física (sem Loja 93)",
+    "fonte": "etapa3",
+    "unidade": "R$",
+    "valor": 329234755.5427072
+  },
+  "e3.skus_ativos.rede_completa": {
+    "descricao": "SKUs ativos — rede completa",
+    "fonte": "etapa3",
+    "unidade": "SKUs",
+    "valor": 2729
+  },
+  "e3.transacoes.rede_completa": {
+    "descricao": "Linhas de venda (proxy de transações) — rede completa",
+    "fonte": "etapa3",
+    "unidade": "linhas",
+    "valor": 1090390
+  },
+  "e3.transacoes.rede_fisica": {
+    "descricao": "Linhas de venda — rede física",
+    "fonte": "etapa3",
+    "unidade": "linhas",
+    "valor": 1065507
+  },
+  "e3.validacoes.ok": {
+    "descricao": "Validações OK na Etapa 3",
+    "fonte": "etapa3",
+    "unidade": "checks",
+    "valor": 60
+  },
+  "e3.validacoes.total": {
+    "descricao": "Validações executadas na Etapa 3",
+    "fonte": "etapa3",
+    "unidade": "checks",
+    "valor": 60
+  },
+  "e4.cobertura.total_pares": {
+    "descricao": "Pares loja×produto na análise de cobertura — rede completa",
+    "fonte": "etapa4",
+    "unidade": "pares",
+    "valor": 28721
+  },
+  "e4.fisico.pares": {
+    "descricao": "Pares loja×produto — rede física",
+    "fonte": "etapa4",
+    "unidade": "pares",
+    "valor": 26395
+  },
+  "e4.ruptura_critico.completa.pares": {
+    "descricao": "Pares em ruptura/crítico — rede completa",
+    "fonte": "etapa4",
+    "unidade": "pares",
+    "valor": 26713
+  },
+  "e4.ruptura_critico.completa.pct": {
+    "descricao": "% de pares em ruptura/crítico — rede completa",
+    "fonte": "etapa4",
+    "unidade": "%",
+    "valor": 93.00859997910936
+  },
+  "e4.ruptura_critico.completa.receita": {
+    "descricao": "Receita histórica associada a ruptura/crítico — rede completa",
+    "fonte": "etapa4",
+    "unidade": "R$",
+    "valor": 464641938.47586906
+  },
+  "e4.ruptura_critico.fisico.pares": {
+    "descricao": "Pares em ruptura/crítico — rede física",
+    "fonte": "etapa4",
+    "unidade": "pares",
+    "valor": 24481
+  },
+  "e4.ruptura_critico.fisico.pct": {
+    "descricao": "% de pares em ruptura/crítico — rede física",
+    "fonte": "etapa4",
+    "unidade": "%",
+    "valor": 92.74862663383216
+  },
+  "e4.ruptura_critico.fisico.receita": {
+    "descricao": "Receita histórica associada a ruptura/crítico — rede física",
+    "fonte": "etapa4",
+    "unidade": "R$",
+    "valor": 316347573.28686714
+  },
+  "e4.validacoes.ok": {
+    "descricao": "Validações OK na Etapa 4",
+    "fonte": "etapa4",
+    "unidade": "checks",
+    "valor": 43
+  },
+  "e4.validacoes.total": {
+    "descricao": "Validações executadas na Etapa 4",
+    "fonte": "etapa4",
+    "unidade": "checks",
+    "valor": 43
+  },
+  "e5.acima_lista.loja93": {
+    "descricao": "Combinações acima da lista — Loja 93/B2B",
+    "fonte": "etapa5",
+    "unidade": "comb",
+    "valor": 10
+  },
+  "e5.acima_lista.rede_completa": {
+    "descricao": "Combinações loja×produto×embalagem acima da lista — rede completa",
+    "fonte": "etapa5",
+    "unidade": "comb",
+    "valor": 2089
+  },
+  "e5.acima_lista.rede_fisica": {
+    "descricao": "Combinações loja×produto×embalagem acima da lista — rede física",
+    "fonte": "etapa5",
+    "unidade": "comb",
+    "valor": 2079
+  },
+  "e5.candidatos.alta_fisica": {
+    "descricao": "Candidatos a repricing de prioridade ALTA — rede física",
+    "fonte": "etapa5",
+    "unidade": "comb",
+    "valor": 326
+  },
+  "e5.candidatos.rede_fisica": {
+    "descricao": "Candidatos a repricing — rede física",
+    "fonte": "etapa5",
+    "unidade": "comb",
+    "valor": 3260
+  },
+  "e5.cobertura_custo.pct_completa": {
+    "descricao": "Cobertura de custo (% receita) — rede completa",
+    "fonte": "etapa5",
+    "unidade": "%",
+    "valor": 16.39306525837631
+  },
+  "e5.cobertura_custo.pct_fisica": {
+    "descricao": "Cobertura de custo (% receita) — rede física",
+    "fonte": "etapa5",
+    "unidade": "%",
+    "valor": 15.160480062186382
+  },
+  "e5.cobertura_custo.pct_loja93": {
+    "descricao": "Cobertura de custo (% receita) — Loja 93/B2B",
+    "fonte": "etapa5",
+    "unidade": "%",
+    "valor": 12.827187235351056
+  },
+  "e5.cobertura_custo.receita_completa": {
+    "descricao": "Receita coberta por custo — rede completa",
+    "fonte": "etapa5",
+    "unidade": "R$",
+    "valor": 79099121.47057286
+  },
+  "e5.cobertura_custo.receita_fisica": {
+    "descricao": "Receita coberta por custo — rede física",
+    "fonte": "etapa5",
+    "unidade": "R$",
+    "valor": 49913569.471840195
+  },
+  "e5.cobertura_custo.receita_loja93": {
+    "descricao": "Receita coberta por custo — Loja 93/B2B",
+    "fonte": "etapa5",
+    "unidade": "R$",
+    "valor": 19661639.913560726
+  },
+  "e5.cobertura_custo.skus_com_compra": {
+    "descricao": "SKUs com compra registrada no período",
+    "fonte": "etapa5",
+    "unidade": "SKUs",
+    "valor": 329
+  },
+  "e5.cobertura_custo.skus_com_custo": {
+    "descricao": "SKUs com preço de compra válido (custo auditável)",
+    "fonte": "etapa5",
+    "unidade": "SKUs",
+    "valor": 261
+  },
+  "e5.desconto.rede_fisica": {
+    "descricao": "Desconto efetivo médio ponderado — rede física",
+    "fonte": "etapa5",
+    "unidade": "%",
+    "valor": 17.391959357873397
+  },
+  "e5.dispersao.cv_alta_fisica": {
+    "descricao": "SKUs com CV de preço >30% (rede física, embalagem 0)",
+    "fonte": "etapa5",
+    "unidade": "SKUs",
+    "valor": 46
+  },
+  "e5.margem.loja93": {
+    "descricao": "Margem bruta % ponderada (itens com custo) — Loja 93/B2B",
+    "fonte": "etapa5",
+    "unidade": "%",
+    "valor": 43.91077340199942
+  },
+  "e5.margem.rede_completa": {
+    "descricao": "Margem bruta % ponderada (itens com custo) — rede completa",
+    "fonte": "etapa5",
+    "unidade": "%",
+    "valor": 47.59941724014893
+  },
+  "e5.margem.rede_fisica": {
+    "descricao": "Margem bruta % ponderada (itens com custo) — rede física",
+    "fonte": "etapa5",
+    "unidade": "%",
+    "valor": 49.757785145584435
+  },
+  "e5.markup.rede_completa": {
+    "descricao": "Markup ponderado — rede completa",
+    "fonte": "etapa5",
+    "unidade": "x",
+    "valor": 1.9083757228100762
+  },
+  "e5.markup.rede_fisica": {
+    "descricao": "Markup ponderado — rede física",
+    "fonte": "etapa5",
+    "unidade": "x",
+    "valor": 1.990358113983732
+  },
+  "e5.naive.amplitude": {
+    "descricao": "Leitura ingênua: SKUs com amplitude de preço bruto >30%",
+    "fonte": "etapa5",
+    "unidade": "SKUs",
+    "valor": 2619
+  },
+  "e5.skus_margem_negativa.rede_fisica": {
+    "descricao": "SKUs com margem negativa (preço < custo) — rede física",
+    "fonte": "etapa5",
+    "unidade": "SKUs",
+    "valor": 7
+  },
+  "e5.skus_vendidos": {
+    "descricao": "SKUs vendidos (rede completa)",
+    "fonte": "etapa5",
+    "unidade": "SKUs",
+    "valor": 2729
+  },
+  "e5.validacoes.ok": {
+    "descricao": "Validações com status OK na Etapa 5",
+    "fonte": "etapa5",
+    "unidade": "checks",
+    "valor": 21
+  },
+  "e5.validacoes.total": {
+    "descricao": "Validações executadas na Etapa 5",
+    "fonte": "etapa5",
+    "unidade": "checks",
+    "valor": 21
+  },
+  "e6.cobertura_custo.pct_completa": {
+    "descricao": "Cobertura de custo dos pares recomendados — rede completa",
+    "fonte": "etapa6",
+    "unidade": "%",
+    "valor": 9.672348577884756
+  },
+  "e6.investimento.loja93": {
+    "descricao": "Investimento conhecido (com custo) — Loja 93/B2B",
+    "fonte": "etapa6",
+    "unidade": "R$",
+    "valor": 2054067.5832
+  },
+  "e6.investimento.rede_fisica": {
+    "descricao": "Investimento conhecido (com custo) — rede física",
+    "fonte": "etapa6",
+    "unidade": "R$",
+    "valor": 5665536.435971
+  },
+  "e6.pares.loja93": {
+    "descricao": "Pares recomendados — Loja 93/B2B",
+    "fonte": "etapa6",
+    "unidade": "pares",
+    "valor": 296
+  },
+  "e6.pares.rede_completa": {
+    "descricao": "Pares loja×SKU com compra recomendada — rede completa",
+    "fonte": "etapa6",
+    "unidade": "pares",
+    "valor": 20357
+  },
+  "e6.pares.rede_fisica": {
+    "descricao": "Pares recomendados — rede física",
+    "fonte": "etapa6",
+    "unidade": "pares",
+    "valor": 20061
+  },
+  "e6.prioridade_alta.rede_fisica": {
+    "descricao": "Pares de prioridade ALTA — rede física",
+    "fonte": "etapa6",
+    "unidade": "pares",
+    "valor": 2007
+  },
+  "e6.unidades.loja93": {
+    "descricao": "Unidades recomendadas — Loja 93/B2B",
+    "fonte": "etapa6",
+    "unidade": "un",
+    "valor": 26265.0
+  },
+  "e6.unidades.rede_completa": {
+    "descricao": "Unidades de armazenagem recomendadas — rede completa",
+    "fonte": "etapa6",
+    "unidade": "un",
+    "valor": 1019914.0
+  },
+  "e6.unidades.rede_fisica": {
+    "descricao": "Unidades recomendadas — rede física",
+    "fonte": "etapa6",
+    "unidade": "un",
+    "valor": 993649.0
+  },
+  "e6.validacoes.ok": {
+    "descricao": "Validações OK na Etapa 6",
+    "fonte": "etapa6",
+    "unidade": "checks",
+    "valor": 18
+  },
+  "e6.validacoes.total": {
+    "descricao": "Validações executadas na Etapa 6",
+    "fonte": "etapa6",
+    "unidade": "checks",
+    "valor": 18
+  },
+  "e7.anti_dupla.pares": {
+    "descricao": "Pares que disparam mais de um sinal (entram uma vez via ação primária)",
+    "fonte": "etapa7",
+    "unidade": "pares",
+    "valor": 990
+  },
+  "e7.comprar.rede_fisica": {
+    "descricao": "Pares a comprar — rede física",
+    "fonte": "etapa7",
+    "unidade": "pares",
+    "valor": 19126
+  },
+  "e7.comprar.rede_fisica.valor": {
+    "descricao": "Investimento conhecido de recompra — rede física",
+    "fonte": "etapa7",
+    "unidade": "R$",
+    "valor": 4620387.547171
+  },
+  "e7.descontinuar.rede_fisica": {
+    "descricao": "Pares a descontinuar — rede física",
+    "fonte": "etapa7",
+    "unidade": "pares",
+    "valor": 434
+  },
+  "e7.descontinuar.rede_fisica.valor": {
+    "descricao": "Capital imobilizado com custo — rede física",
+    "fonte": "etapa7",
+    "unidade": "R$",
+    "valor": 372923.769829
+  },
+  "e7.prioridade_alta.rede_fisica": {
+    "descricao": "Pares de prioridade ALTA — rede física",
+    "fonte": "etapa7",
+    "unidade": "pares",
+    "valor": 2036
+  },
+  "e7.promover.rede_fisica": {
+    "descricao": "Pares a promover/queimar — rede física",
+    "fonte": "etapa7",
+    "unidade": "pares",
+    "valor": 752
+  },
+  "e7.promover.rede_fisica.valor": {
+    "descricao": "Estoque encalhado com custo — rede física",
+    "fonte": "etapa7",
+    "unidade": "R$",
+    "valor": 6724863.428335001
+  },
+  "e7.reprecificar.rede_fisica": {
+    "descricao": "Pares a reprecificar — rede física",
+    "fonte": "etapa7",
+    "unidade": "pares",
+    "valor": 956
+  },
+  "e7.repricing.margem_auditavel": {
+    "descricao": "Repricing com sinal de margem auditável",
+    "fonte": "etapa7",
+    "unidade": "pares",
+    "valor": 41
+  },
+  "e7.repricing.preco_com_custo": {
+    "descricao": "Repricing com custo válido, só sinal de preço/lista",
+    "fonte": "etapa7",
+    "unidade": "pares",
+    "valor": 75
+  },
+  "e7.repricing.preco_sem_custo": {
+    "descricao": "Repricing sem custo (ajuste de preço/lista)",
+    "fonte": "etapa7",
+    "unidade": "pares",
+    "valor": 895
+  },
+  "e7.repricing.total": {
+    "descricao": "Candidatos a repricing casados na base (loja×SKU, sinal de repricing)",
+    "fonte": "etapa7",
+    "unidade": "pares",
+    "valor": 1011
+  },
+  "e7.validacoes.ok": {
+    "descricao": "Validações OK na Etapa 7",
+    "fonte": "etapa7",
+    "unidade": "checks",
+    "valor": 23
+  },
+  "e7.validacoes.total": {
+    "descricao": "Validações executadas na Etapa 7",
+    "fonte": "etapa7",
+    "unidade": "checks",
+    "valor": 23
+  }
+}
