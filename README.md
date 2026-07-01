@@ -128,9 +128,9 @@ python scripts/gerar_dashboard.py
 | Dimensão | Dado |
 |---|---|
 | Período analisado | jan/2024 – dez/2025 (24 meses) |
-| Receita total | R$ 482,5M |
-| Linhas de venda (proxy de transações) | 1.090.390 |
-| SKUs ativos | 2.729 |
+| Receita total | <!--kpi:e1.receita_total:milhao-->R$ 482,5M<!--/kpi--> |
+| Linhas de venda (proxy de transações) | <!--kpi:e1.transacoes:int-->1.090.390<!--/kpi--> |
+| SKUs ativos | <!--kpi:e1.skus_ativos:int-->2.729<!--/kpi--> |
 | Lojas | 11 (5 estados) |
 | Categorias (Nível 1) | 23 |
 
@@ -150,8 +150,8 @@ python scripts/gerar_dashboard.py
 
 **Achados principais:**
 - 80% da receita (R$385M) vem de SKUs sem compra registrada no período → estoque inicial é o principal ativo operacional
-- Loja 93 representa 31,8% da receita com apenas 12% dos SKUs → operação B2B/atacado
-- 2.619 SKUs com amplitude de preço bruto >30% → leitura ingênua de possível inconsistência de precificação (refinada na Etapa 5 para **46 SKUs** por CV, ao separar embalagem e atacado)
+- Loja 93 representa <!--kpi:e3.loja93.receita_pct:pct-->31,8%<!--/kpi--> da receita com apenas 12% dos SKUs → operação B2B/atacado
+- <!--kpi:e5.naive.amplitude:int-->2.619<!--/kpi--> SKUs com amplitude de preço bruto >30% → leitura ingênua de possível inconsistência de precificação (refinada na Etapa 5 para **<!--kpi:e5.dispersao.cv_alta_fisica:int-->46<!--/kpi--> SKUs** por CV, ao separar embalagem e atacado)
 
 ### Etapa 2 — Estoque Projetado e Cobertura
 
@@ -163,12 +163,12 @@ Valores **pós-correção** (ver seção [Revisão de qualidade e correções](#
 
 | Status | Pares loja×produto | % |
 |---|---|---|
-| Em ruptura (estoque ≤ 0) | 26.140 | 91,0% |
-| Crítico (1–30 dias de cobertura) | 573 | 2,0% |
-| Atenção (31–90 dias) | 391 | 1,4% |
-| Saudável (>90 dias) | 955 | 3,3% |
-| Sem venda (capital imobilizado) | 662 | 2,3% |
-| **Total** | **28.721** | **100%** |
+| Em ruptura (estoque ≤ 0) | <!--kpi:e2.ruptura.pares:int-->26.140<!--/kpi--> | <!--kpi:e2.ruptura.pct:pct-->91,0%<!--/kpi--> |
+| Crítico (1–30 dias de cobertura) | <!--kpi:e2.status.critico:int-->573<!--/kpi--> | 2,0% |
+| Atenção (31–90 dias) | <!--kpi:e2.status.atencao:int-->391<!--/kpi--> | 1,4% |
+| Saudável (>90 dias) | <!--kpi:e2.status.saudavel:int-->955<!--/kpi--> | 3,3% |
+| Sem venda (capital imobilizado) | <!--kpi:e2.status.sem_venda:int-->662<!--/kpi--> | 2,3% |
+| **Total** | **<!--kpi:e2.cobertura.total_pares:int-->28.721<!--/kpi-->** | **100%** |
 
 **Interpretação:** o alto percentual de ruptura é consistente com a descoberta da Etapa 1 — a rede opera principalmente do estoque inicial, sem reposição registrada em ~88% dos SKUs. Após a correção, o topo do ranking de reposição passou a incluir os pares de maior receita da base (Eletros da loja 93), antes invisíveis. O foco da Etapa 6 (plano de compras) deve priorizar os pares **em ruptura/crítico com maior receita histórica**.
 
@@ -177,13 +177,13 @@ Valores **pós-correção** (ver seção [Revisão de qualidade e correções](#
 Foram gerados rankings por receita e quantidade em unidade de armazenagem, curva ABC por receita, agregações por hierarquia de produto (`NIVEL_1`, `NIVEL_2`, `NIVEL_3`), loja, cidade/estado e evolução mensal. Todas as saídas têm visão de **rede completa** e **rede física sem Loja 93**.
 
 **Achados principais:**
-- Rede completa: R$ 482,5M, 1.090.390 linhas de venda (proxy de transações) e 2.729 SKUs ativos.
-- Loja 93: 31,8% da receita e 2,3% das linhas de venda, com receita média de R$ 6.160,07 por linha.
-- Rede física sem Loja 93: R$ 329,2M e 1.065.507 linhas de venda.
+- Rede completa: <!--kpi:e3.receita.rede_completa:milhao-->R$ 482,5M<!--/kpi-->, <!--kpi:e3.transacoes.rede_completa:int-->1.090.390<!--/kpi--> linhas de venda (proxy de transações) e <!--kpi:e3.skus_ativos.rede_completa:int-->2.729<!--/kpi--> SKUs ativos.
+- Loja 93: <!--kpi:e3.loja93.receita_pct:pct-->31,8%<!--/kpi--> da receita e <!--kpi:e3.loja93.transacoes_pct:pct-->2,3%<!--/kpi--> das linhas de venda, com receita média de <!--kpi:e3.loja93.receita_media_linha:reais-->R$ 6.160,07<!--/kpi--> por linha.
+- Rede física sem Loja 93: <!--kpi:e3.receita.rede_fisica:milhao-->R$ 329,2M<!--/kpi--> e <!--kpi:e3.transacoes.rede_fisica:int-->1.065.507<!--/kpi--> linhas de venda.
 - Produto líder por receita na rede completa: `467774` — COND.SPLIT 9000 COND.S3UQ09 INV. 143, com R$ 12,5M.
 - Produto líder por receita na rede física: `432048` — MASSA CORRIDA PVA CORAL PLS 25KG, com R$ 9,9M.
-- Curva A: 522 SKUs concentram 80,0% da receita na rede completa; sem Loja 93, são 713 SKUs.
-- **Queda de 2025 — hipótese a confirmar, não achado fechado.** A receita recua 54,2% em 2025 vs 2024 na rede completa e 47,6% na rede física, de forma quase monotônica, com o nº de linhas caindo na mesma proporção. Essa queda proporcional é assinatura *possível* de **truncamento de captura** (extração incompleta dos meses finais), não necessariamente retração de mercado — ver diagnóstico em [`outputs/etapa3/diagnostico_captura_mensal.csv`](outputs/etapa3/diagnostico_captura_mensal.csv) e [`diagnostico_captura_lojas_mensal.csv`](outputs/etapa3/diagnostico_captura_lojas_mensal.csv): se a queda é homogênea entre lojas → mercado; se lojas "somem" da base → captura. **Impacto:** essa base alimenta `VENDA_MEDIA_MES` e a projeção de compras das Etapas 6/7, então a incerteza se propaga para a demanda projetada (ler as quantidades como ordem de prioridade, não previsão fechada).
+- Curva A: <!--kpi:e3.curva_a.completa:int-->522<!--/kpi--> SKUs concentram <!--kpi:e3.curva_a.pct_completa:pct-->80,0%<!--/kpi--> da receita na rede completa; sem Loja 93, são <!--kpi:e3.curva_a.fisica:int-->713<!--/kpi--> SKUs.
+- **Queda de 2025 — hipótese a confirmar, não achado fechado.** A receita recua <!--kpi:e3.queda_2025.completa:pct_abs-->54,2%<!--/kpi--> em 2025 vs 2024 na rede completa e <!--kpi:e3.queda_2025.fisica:pct_abs-->47,6%<!--/kpi--> na rede física, de forma quase monotônica, com o nº de linhas caindo na mesma proporção. Essa queda proporcional é assinatura *possível* de **truncamento de captura** (extração incompleta dos meses finais), não necessariamente retração de mercado — ver diagnóstico em [`outputs/etapa3/diagnostico_captura_mensal.csv`](outputs/etapa3/diagnostico_captura_mensal.csv) e [`diagnostico_captura_lojas_mensal.csv`](outputs/etapa3/diagnostico_captura_lojas_mensal.csv): se a queda é homogênea entre lojas → mercado; se lojas "somem" da base → captura. **Impacto:** essa base alimenta `VENDA_MEDIA_MES` e a projeção de compras das Etapas 6/7, então a incerteza se propaga para a demanda projetada (ler as quantidades como ordem de prioridade, não previsão fechada).
 - A maior contribuição bruta para a queda de 2025 veio de `D - ELETROS` e, por loja, da Loja 93.
 
 **Limitações e cuidados:** a análise é descritiva; picos e quedas não são atribuídos a causa sem evidência adicional. `TRANSACOES` representa linhas de venda, não cupons únicos, pois a base não tem id de cupom/pedido/nota. Ticket médio = proxy de receita por linha de venda; preço médio = receita por unidade de armazenagem. A Loja 93 é segregada para evitar mistura entre atacado/B2B e rede física.
@@ -202,8 +202,8 @@ Arquivos auditáveis em `outputs/etapa3/`, incluindo rankings, curva ABC, desemp
 A Etapa 4 agrega o snapshot de cobertura da Etapa 2 por `NIVEL_1`, `NIVEL_2`, `NIVEL_3`, loja e categoria×loja, cruzando com os outputs auditáveis da Etapa 3 para priorizar reposição por receita histórica em risco. A Loja 93 é mantida na rede completa, mas a priorização operacional compara a rede física separadamente.
 
 **Achados principais:**
-- Rede completa: 28.721 pares loja×produto; 26.713 (93,0%) em ruptura/crítico.
-- Receita histórica associada a pares em ruptura/crítico: R$ 464,6M na rede completa e R$ 316,3M na rede física sem Loja 93.
+- Rede completa: <!--kpi:e4.cobertura.total_pares:int-->28.721<!--/kpi--> pares loja×produto; <!--kpi:e4.ruptura_critico.completa.pares:int-->26.713<!--/kpi--> (<!--kpi:e4.ruptura_critico.completa.pct:pct-->93,0%<!--/kpi-->) em ruptura/crítico.
+- Receita histórica associada a pares em ruptura/crítico: <!--kpi:e4.ruptura_critico.completa.receita:milhao-->R$ 464,6M<!--/kpi--> na rede completa e <!--kpi:e4.ruptura_critico.fisico.receita:milhao-->R$ 316,3M<!--/kpi--> na rede física sem Loja 93.
 - Categoria com maior receita em risco: `D - ELETROS` (R$ 190,7M na rede completa; R$ 78,8M na rede física).
 - Loja física com maior receita em risco: loja 3 (SALVADOR-BA), com R$ 58,7M em ruptura/crítico.
 - Maior prioridade categoria×loja na rede física: `D - ELETROS` na loja 92 (CABO DE SANTO AGOSTINHO-PE), com R$ 17,0M de receita em risco.
@@ -225,13 +225,13 @@ Arquivos auditáveis em `outputs/etapa4/`, incluindo cobertura por categorias/lo
 A Etapa 5 calcula a margem bruta realizada (R$ e %), markup e custo médio por SKU, categoria e loja, sempre na **mesma unidade de armazenagem**, e compara o preço praticado com o preço de lista (`dim_precos`) para medir o desconto efetivo — **dentro da mesma embalagem**. Também mede a dispersão de preço do mesmo SKU entre lojas (por embalagem) e prioriza candidatos a repricing. A Loja 93 (atacado/B2B) é segregada em universo próprio e o custo de cada universo usa apenas as compras das lojas do universo.
 
 **Achados principais:**
-- Custo de compra válido existe só para **261 SKUs** (de 2.729 vendidos): **R$ 79,1M, 16,4% da receita** na rede completa (15,2% na rede física). A margem realizada vale apenas para esse subconjunto — análogo ao "88% vendem sem compra registrada" das Etapas 1/2.
+- Custo de compra válido existe só para **<!--kpi:e5.cobertura_custo.skus_com_custo:int-->261<!--/kpi--> SKUs** (de <!--kpi:e5.skus_vendidos:int-->2.729<!--/kpi--> vendidos): **<!--kpi:e5.cobertura_custo.receita_completa:milhao-->R$ 79,1M<!--/kpi-->, <!--kpi:e5.cobertura_custo.pct_completa:pct-->16,4%<!--/kpi--> da receita** na rede completa (<!--kpi:e5.cobertura_custo.pct_fisica:pct-->15,2%<!--/kpi--> na rede física). A margem realizada vale apenas para esse subconjunto — análogo ao "88% vendem sem compra registrada" das Etapas 1/2.
 - **`fato_compras_2.csv` parece PARCIAL** — 4 lojas com venda (**1, 4, 8 e 9**) não têm nenhuma compra no arquivo e **10 categorias inteiras** aparecem com 100% da receita sem custo (ex.: `R - ELETRONICOS`, `S - TINTAS E QUIMICOS`, `F - FERRAMENTAS`). A baixa cobertura de custo é, portanto, **provável lacuna de extração a levantar com a origem dos dados**, não característica do negócio. Detalhes em [`LIMITACOES.md`](LIMITACOES.md).
-- Margem bruta % média ponderada (itens com custo): **47,6% na rede completa** (markup 1,91×) e **49,8% na rede física** (markup 1,99×).
+- Margem bruta % média ponderada (itens com custo): **<!--kpi:e5.margem.rede_completa:pct-->47,6%<!--/kpi--> na rede completa** (markup <!--kpi:e5.markup.rede_completa:markup-->1,91×<!--/kpi-->) e **<!--kpi:e5.margem.rede_fisica:pct-->49,8%<!--/kpi--> na rede física** (markup <!--kpi:e5.markup.rede_fisica:markup-->1,99×<!--/kpi-->).
 - Maior margem por categoria na rede física (cobertura ≥10%): `C - PISOS E REVESTIMENTOS` (56,1%); menor: `D - ELETROS` (42,8%). `B - UTILIDADES DOMÉSTICAS` aparece com **margem negativa** (−15,4%) no subconjunto com custo — louças/porcelanas de baixo giro vendidas abaixo do custo.
-- Desconto efetivo médio ponderado na rede física: **17,4%**; **2.079** combinações loja×produto×embalagem vendem **acima da lista** (desconto negativo → tabela possivelmente desatualizada). Contagem de itens *estritamente* acima da lista, com tolerância de arredondamento para não contar empates preço = lista.
-- Dispersão de preço entre lojas (rede física, embalagem 0): apenas **46 SKUs com CV>30%** — bem abaixo da leitura ingênua de "2.619 SKUs com amplitude de preço bruto >30%" (métrica diferente: amplitude do preço bruto entre linhas, misturando embalagem e atacado).
-- **3.260** candidatos a repricing na rede física (326 de prioridade ALTA), combinando margem baixa/negativa, desconto alto e preço fora da faixa da rede. O sinal de margem é calculado no grão loja×produto×embalagem.
+- Desconto efetivo médio ponderado na rede física: **<!--kpi:e5.desconto.rede_fisica:pct-->17,4%<!--/kpi-->**; **<!--kpi:e5.acima_lista.rede_fisica:int-->2.079<!--/kpi-->** combinações loja×produto×embalagem vendem **acima da lista** (desconto negativo → tabela possivelmente desatualizada). Contagem de itens *estritamente* acima da lista, com tolerância de arredondamento para não contar empates preço = lista.
+- Dispersão de preço entre lojas (rede física, embalagem 0): apenas **<!--kpi:e5.dispersao.cv_alta_fisica:int-->46<!--/kpi--> SKUs com CV>30%** — bem abaixo da leitura ingênua de "<!--kpi:e5.naive.amplitude:int-->2.619<!--/kpi--> SKUs com amplitude de preço bruto >30%" (métrica diferente: amplitude do preço bruto entre linhas, misturando embalagem e atacado).
+- **<!--kpi:e5.candidatos.rede_fisica:int-->3.260<!--/kpi-->** candidatos a repricing na rede física (<!--kpi:e5.candidatos.alta_fisica:int-->326<!--/kpi--> de prioridade ALTA), combinando margem baixa/negativa, desconto alto e preço fora da faixa da rede. O sinal de margem é calculado no grão loja×produto×embalagem.
 
 **Revisão de qualidade (autoaudit):** três armadilhas tratadas explicitamente — (1) **margens absurdas por erro de unidade**: preço e custo normalizados para a unidade de armazenagem mantêm todos os 261 markups na faixa sanitária (0,65×–4,76×), prevenindo o falso outlier de "venda em caixa"; (2) **custo de SKU sem compra vazando para a margem**: 2.468 SKUs (R$ 403,4M, 83,6% da receita) ficariam com margem fabricada se o custo fosse imputado — corrigido restringindo a margem aos SKUs com custo próprio; (3) **mistura de embalagem na dispersão**: a leitura ingênua marcava ~2,6k SKUs com variação >30%; separando embalagem e atacado, caem para 46 (pelo CV).
 
@@ -255,12 +255,12 @@ Arquivos auditáveis em `outputs/etapa5/`: `margem_produtos.csv`, `margem_catego
 A Etapa 6 transforma a cobertura e a priorização das etapas anteriores em um plano operacional de compra para **90 dias**, no grão loja×SKU. A quantidade recomendada usa demanda histórica do próprio par, estoque projetado utilizável e status de cobertura; o investimento financeiro só é estimado quando existe custo válido na Etapa 5. A Loja 93/B2B é tratada em escopo separado — com demanda **e status de cobertura recalculados** a partir das próprias vendas B2B — e os totais fecham em `REDE_COMPLETA`.
 
 **Achados principais:**
-- Rede completa: **20.357 pares loja×SKU** com compra recomendada, somando **1.019.914 unidades de armazenagem**.
-- Rede física sem Loja 93: **20.061 pares** recomendados, **993.649 unidades**, com **R$ 5,7M** de investimento conhecido.
-- Loja 93/B2B: **296 pares** recomendados, **26.265 unidades**, com **R$ 2,1M** de investimento conhecido (a demanda B2B recalculada reclassifica **37 pares** como CRÍTICO/ATENÇÃO que ficariam fora da fila se herdassem o status da Etapa 2).
-- Apenas **9,7%** dos pares recomendados têm custo válido; portanto, o plano é mais operacional do que financeiro até completar custos por SKU.
+- Rede completa: **<!--kpi:e6.pares.rede_completa:int-->20.357<!--/kpi--> pares loja×SKU** com compra recomendada, somando **<!--kpi:e6.unidades.rede_completa:int-->1.019.914<!--/kpi--> unidades de armazenagem**.
+- Rede física sem Loja 93: **<!--kpi:e6.pares.rede_fisica:int-->20.061<!--/kpi--> pares** recomendados, **<!--kpi:e6.unidades.rede_fisica:int-->993.649<!--/kpi--> unidades**, com **<!--kpi:e6.investimento.rede_fisica:milhao-->R$ 5,7M<!--/kpi-->** de investimento conhecido.
+- Loja 93/B2B: **<!--kpi:e6.pares.loja93:int-->296<!--/kpi--> pares** recomendados, **<!--kpi:e6.unidades.loja93:int-->26.265<!--/kpi--> unidades**, com **<!--kpi:e6.investimento.loja93:milhao-->R$ 2,1M<!--/kpi-->** de investimento conhecido (a demanda B2B recalculada reclassifica **37 pares** como CRÍTICO/ATENÇÃO que ficariam fora da fila se herdassem o status da Etapa 2).
+- Apenas **<!--kpi:e6.cobertura_custo.pct_completa:pct-->9,7%<!--/kpi-->** dos pares recomendados têm custo válido; portanto, o plano é mais operacional do que financeiro até completar custos por SKU.
 - Categoria com maior volume recomendado na rede física: `C - PISOS E REVESTIMENTOS` (**264.264 unidades**). Loja física com maior volume: loja 3 (SALVADOR-BA), com **166.885 unidades**.
-- A fila operacional da rede física tem **2.007 pares de prioridade ALTA**.
+- A fila operacional da rede física tem **<!--kpi:e6.prioridade_alta.rede_fisica:int-->2.007<!--/kpi--> pares de prioridade ALTA**.
 
 **Autoaudit / cuidados críticos:** ausência de demanda observada não vira compra; custo ausente não vira investimento zero; estoque negativo vira zero utilizável, não dívida adicional; e itens com margem negativa exigem validação de preço/margem antes de compra.
 
@@ -284,12 +284,12 @@ A Etapa 7 é a **síntese de decisão**: consome os artefatos auditáveis das Et
 - **Comprar** — fila de compra da Etapa 6 (`QTD_RECOMENDADA_ARM > 0`).
 
 **Achados principais:**
-- Rede física sem Loja 93: **19.126** pares a comprar (R$ 4,6M de investimento conhecido), **956** a reprecificar, **752** a promover/queimar (R$ 6,7M de estoque encalhado com custo) e **434** a descontinuar (R$ 0,4M de capital imobilizado com custo).
+- Rede física sem Loja 93: **<!--kpi:e7.comprar.rede_fisica:int-->19.126<!--/kpi-->** pares a comprar (<!--kpi:e7.comprar.rede_fisica.valor:milhao-->R$ 4,6M<!--/kpi--> de investimento conhecido), **<!--kpi:e7.reprecificar.rede_fisica:int-->956<!--/kpi-->** a reprecificar, **<!--kpi:e7.promover.rede_fisica:int-->752<!--/kpi-->** a promover/queimar (<!--kpi:e7.promover.rede_fisica.valor:milhao-->R$ 6,7M<!--/kpi--> de estoque encalhado com custo) e **<!--kpi:e7.descontinuar.rede_fisica:int-->434<!--/kpi-->** a descontinuar (<!--kpi:e7.descontinuar.rede_fisica.valor:milhao-->R$ 0,4M<!--/kpi--> de capital imobilizado com custo).
 - Loja 93/B2B (escopo próprio): **263** a comprar, **33** a reprecificar, **20** a promover e **29** a descontinuar.
 - **Guarda-corpo do campeão e curva ausente:** **132** pares curva A parados e **3** pares sem curva ABC foram protegidos do descontinue e roteados para escoar/transferir/revisar — nenhum item curva A ou sem curva entra em descontinuar.
-- **Repricing (revisão interna):** dos **1.011** candidatos loja×SKU casados na base, **41** têm sinal de margem **auditável**; **75** têm custo válido mas apenas sinal de preço/lista; **895** não têm custo e são tratados como ajuste de preço/lista, não como prova de margem.
-- **Anti-dupla-contagem:** **990** pares disparam mais de um sinal; cada um entra uma única vez na fila via ação primária. As reconciliações com as etapas-fonte usam os *sinais* (o sinal de comprar bate com os 20.357 pares da Etapa 6; o de reprecificar bate com os candidatos ALTA/MÉDIA da Etapa 5).
-- **23/23 validações OK** (receita fecha com a Etapa 3; `REDE_COMPLETA = física + Loja 93` por ação; curva ausente não descontinua; pares sem métrica ficam em prioridade baixa; financeiro nunca imputado sem custo).
+- **Repricing (revisão interna):** dos **<!--kpi:e7.repricing.total:int-->1.011<!--/kpi-->** candidatos loja×SKU casados na base, **<!--kpi:e7.repricing.margem_auditavel:int-->41<!--/kpi-->** têm sinal de margem **auditável**; **<!--kpi:e7.repricing.preco_com_custo:int-->75<!--/kpi-->** têm custo válido mas apenas sinal de preço/lista; **<!--kpi:e7.repricing.preco_sem_custo:int-->895<!--/kpi-->** não têm custo e são tratados como ajuste de preço/lista, não como prova de margem.
+- **Anti-dupla-contagem:** **<!--kpi:e7.anti_dupla.pares:int-->990<!--/kpi-->** pares disparam mais de um sinal; cada um entra uma única vez na fila via ação primária. As reconciliações com as etapas-fonte usam os *sinais* (o sinal de comprar bate com os <!--kpi:e6.pares.rede_completa:int-->20.357<!--/kpi--> pares da Etapa 6; o de reprecificar bate com os candidatos ALTA/MÉDIA da Etapa 5).
+- **<!--kpi:e7.validacoes.ok:int-->23<!--/kpi-->/<!--kpi:e7.validacoes.total:int-->23<!--/kpi--> validações OK** (receita fecha com a Etapa 3; `REDE_COMPLETA = física + Loja 93` por ação; curva ausente não descontinua; pares sem métrica ficam em prioridade baixa; financeiro nunca imputado sem custo).
 
 **Autoaudit / armadilhas tratadas:** (1) descontinuar campeão histórico só por giro recente baixo ou curva ausente → curva A/ausente protegido; (2) promover/reprecificar item como se a margem fosse conhecida sem evidência → separação de sinais e financeiro só com custo; (3) misturar a Loja 93 nas recomendações de varejo → escopo próprio com status B2B recalculado e curva de guarda-corpo; (4) dupla contagem de par que dispara mais de uma ação → ação primária por precedência.
 
