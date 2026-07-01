@@ -1,0 +1,24 @@
+﻿VALIDACAO,OBSERVADO,ESPERADO,DIFERENCA,STATUS
+Receita base vs Etapa 3 - rede completa,482515748.115843,482515748.115843,0.000000,OK
+Receita base vs Etapa 3 - rede fisica,329234755.542709,329234755.542707,0.000002,OK
+Receita base vs Etapa 3 - Loja 93,153280992.573134,153280992.573136,-0.000002,OK
+REDE_COMPLETA = fisica + Loja 93 (pares DESCONTINUAR),463.000000,463.000000,0.000000,OK
+REDE_COMPLETA = fisica + Loja 93 (pares PROMOVER),772.000000,772.000000,0.000000,OK
+REDE_COMPLETA = fisica + Loja 93 (pares REPRECIFICAR),989.000000,989.000000,0.000000,OK
+REDE_COMPLETA = fisica + Loja 93 (pares COMPRAR),19389.000000,19389.000000,0.000000,OK
+Cada par acionavel tem uma unica acao primaria,1.000000,1.000000,0.000000,OK
+Soma de pares por acao = total de pares acionaveis,21613.000000,21613.000000,0.000000,OK
+Sinal COMPRAR = pares com compra na Etapa 6,20357.000000,20357.000000,0.000000,OK
+Sinal REPRECIFICAR = candidatos ALTA/MEDIA (loja x SKU) casados na base,1011.000000,1011.000000,0.000000,OK
+Nenhum par curva A foi descontinuado,0.000000,0.000000,0.000000,OK
+Nenhum par com curva ABC ausente foi descontinuado,0.000000,0.000000,0.000000,OK
+Campeao curva A parado roteado para PROMOVER (nao DESCONTINUAR),1.000000,1.000000,0.000000,OK
+Par parado sem curva ABC roteado para PROMOVER/revisao,1.000000,1.000000,0.000000,OK
+Loja 93 acionavel possui curva ABC de guarda-corpo,1.000000,1.000000,0.000000,OK
+Pares sem metrica de prioridade ficam em BAIXA,1.000000,1.000000,0.000000,OK
+Capital/encalhe/investimento nao imputado sem custo,1.000000,1.000000,0.000000,OK
+Repricing nao gera valor financeiro (sinal de preco),1.000000,1.000000,0.000000,OK
+Texto de repricing sem custo somente quando custo ausente,1.000000,1.000000,0.000000,OK
+Loja 93 fora do universo operacional fisico,1.000000,1.000000,0.000000,OK
+Categorias fecham pares por universo,1.000000,1.000000,0.000000,OK
+Lojas fecham pares por universo,1.000000,1.000000,0.000000,OK

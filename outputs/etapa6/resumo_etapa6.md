@@ -44,7 +44,7 @@ investimento apenas quando ha custo valido da Etapa 5.
 
 ## Validacoes
 
-- 17 validacoes executadas; status geral: `OK`.
+- 18 validacoes executadas; status geral: `OK`.
 - Receita, pares e quantidades reconciliam entre `REDE_COMPLETA`, `REDE_FISICA_SEM_LOJA93` e `LOJA_93_ATACADO_B2B`.
 - Receita historica fecha com Etapa 3 e categorias da rede fisica fecham com Etapa 4.
 - Investimento nao foi imputado para custo ausente.

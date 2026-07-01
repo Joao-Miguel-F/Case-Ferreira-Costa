@@ -243,6 +243,42 @@ def anexar_sinais_etapas(base: pd.DataFrame) -> pd.DataFrame:
         how="left",
         validate="many_to_one",
     ).drop(columns=["UNIVERSO"])
+
+    out["CURVA_ABC_ORIGEM"] = np.where(
+        out["CURVA_ABC_RECEITA"].notna(),
+        "UNIVERSO_OPERACIONAL",
+        "AUSENTE",
+    )
+    rank_completo = rank[rank["UNIVERSO"] == UNIVERSO_COMPLETO][
+        ["CODIGO", "CURVA_ABC_RECEITA", "RANK_RECEITA", "PART_RECEITA_SKU_UNIVERSO_PCT"]
+    ].rename(
+        columns={
+            "CURVA_ABC_RECEITA": "CURVA_ABC_RECEITA_REDE_COMPLETA",
+            "RANK_RECEITA": "RANK_RECEITA_REDE_COMPLETA",
+            "PART_RECEITA_SKU_UNIVERSO_PCT": "PART_RECEITA_SKU_REDE_COMPLETA_PCT",
+        }
+    )
+    out = out.merge(rank_completo, on="CODIGO", how="left", validate="many_to_one")
+    fallback_loja93 = (
+        (out["UNIVERSO_OPERACIONAL"] == ESCOPO_LOJA93)
+        & out["CURVA_ABC_RECEITA"].isna()
+        & out["CURVA_ABC_RECEITA_REDE_COMPLETA"].notna()
+    )
+    for col, fallback_col in [
+        ("CURVA_ABC_RECEITA", "CURVA_ABC_RECEITA_REDE_COMPLETA"),
+        ("RANK_RECEITA", "RANK_RECEITA_REDE_COMPLETA"),
+        ("PART_RECEITA_SKU_UNIVERSO_PCT", "PART_RECEITA_SKU_REDE_COMPLETA_PCT"),
+    ]:
+        out.loc[fallback_loja93, col] = out.loc[fallback_loja93, fallback_col]
+    out.loc[fallback_loja93, "CURVA_ABC_ORIGEM"] = "REDE_COMPLETA_FALLBACK_LOJA93"
+    out = out.drop(
+        columns=[
+            "CURVA_ABC_RECEITA_REDE_COMPLETA",
+            "RANK_RECEITA_REDE_COMPLETA",
+            "PART_RECEITA_SKU_REDE_COMPLETA_PCT",
+        ]
+    )
+
     out = out.merge(
         margem,
         left_on=["UNIVERSO_OPERACIONAL", "CODIGO"],
@@ -562,6 +598,13 @@ def validar_etapa6(plano: pd.DataFrame, total: pd.DataFrame, categorias: pd.Data
         bool(not ((plano["UNIVERSO_OPERACIONAL"] == UNIVERSO_FISICO) & (plano["COD_EMPRESA"] == LOJA_ATACADO)).any()),
     )
     add_bool(
+        "Loja 93 com receita possui curva ABC de guarda-corpo",
+        bool(plano.loc[
+            (plano["UNIVERSO_OPERACIONAL"] == ESCOPO_LOJA93) & (plano["RECEITA_TOTAL"] > 0),
+            "CURVA_ABC_RECEITA",
+        ].notna().all()),
+    )
+    add_bool(
         "Categorias agregadas fecham quantidade por universo",
         bool(
             np.allclose(
@@ -733,7 +776,7 @@ def gerar_documentacao_tecnica() -> str:
 
 - `data/processed/cobertura_estoque.parquet`: snapshot dez/2025 no grao loja x SKU, com estoque projetado, status, dias de cobertura e receita historica.
 - `data/processed/vendas_tratadas.parquet`: recalculo da demanda media mensal por par loja x SKU, incluindo Loja 93 em escopo proprio.
-- `outputs/etapa3/ranking_produtos_receita.csv` e `impacto_loja93.csv`: curva ABC e reconciliacao de receita por universo.
+- `outputs/etapa3/ranking_produtos_receita.csv` e `impacto_loja93.csv`: curva ABC e reconciliacao de receita por universo. Como a Etapa 3 materializa ABC para rede completa e rede fisica, a Loja 93 recebe fallback auditavel da curva da rede completa (`CURVA_ABC_ORIGEM = REDE_COMPLETA_FALLBACK_LOJA93`) para compor score e guarda-corpos posteriores.
 - `outputs/etapa4/cobertura_categorias_n1.csv`: reconciliacao de receita por categoria na rede fisica.
 - `outputs/etapa5/margem_produtos.csv`: custo medio, margem e flags apenas para SKUs com custo valido.
 
@@ -751,6 +794,9 @@ reconciliada desses dois escopos.
   (0 quando estoque <= 0). `STATUS_ESTOQUE_RECALC` deriva desses dias com os
   mesmos cortes da Etapa 2 (<=30 CRITICO, <=90 ATENCAO), agora tambem para a
   Loja 93. Reproduz o status da Etapa 2 na rede fisica.
+- Curva ABC = classe por receita do universo operacional. Na Loja 93, enquanto
+  nao houver ranking ABC B2B dedicado na Etapa 3, usa fallback da `REDE_COMPLETA`
+  e grava `CURVA_ABC_ORIGEM` para auditoria.
 - Estoque utilizavel = `max(ESTOQUE_PROJ, 0)`.
 - Necessidade bruta = `max(demanda_90d - estoque_utilizavel, 0)`.
 - Quantidade recomendada = teto da necessidade bruta, somente para
@@ -773,7 +819,8 @@ reconciliada desses dois escopos.
 universos, fechamento de agregados por categoria/loja, restricao de compras a
 status elegiveis e garantia de que investimento nao foi imputado para custo
 ausente. Verifica ainda que o status recalculado reproduz o da Etapa 2 na rede
-fisica e que nenhum par com demanda e cobertura < 90 dias fica fora da fila.
+fisica, que a Loja 93 possui curva ABC de guarda-corpo e que nenhum par com
+demanda e cobertura < 90 dias fica fora da fila.
 
 ## Arquivos gerados
 
@@ -840,6 +887,7 @@ def main() -> None:
         "PRECO_MEDIO_ARM_HIST",
         "RECEITA_POTENCIAL_90D",
         "CURVA_ABC_RECEITA",
+        "CURVA_ABC_ORIGEM",
         "RANK_RECEITA",
         "CUSTO_MEDIO_ARM",
         "FLAG_CUSTO_VALIDO",

@@ -14,5 +14,6 @@ Todo par com demanda e cobertura < 90 dias entra na fila de compra,1.000000,1.00
 Investimento nao foi imputado para custo ausente,1.000000,1.000000,0.000000,OK
 Margem so marcada como valida onde ha custo,1.000000,1.000000,0.000000,OK
 Loja 93 fora do universo operacional fisico,1.000000,1.000000,0.000000,OK
+Loja 93 com receita possui curva ABC de guarda-corpo,1.000000,1.000000,0.000000,OK
 Categorias agregadas fecham quantidade por universo,1.000000,1.000000,0.000000,OK
 Lojas agregadas fecham quantidade por universo,1.000000,1.000000,0.000000,OK
