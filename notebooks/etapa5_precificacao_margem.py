@@ -53,6 +53,7 @@ outputs/etapa5/margem_lojas.csv
 outputs/etapa5/precificacao_desconto.csv
 outputs/etapa5/dispersao_preco_lojas.csv
 outputs/etapa5/candidatos_repricing.csv
+outputs/etapa5/candidatos_repricing_impacto.csv
 outputs/etapa5/recomendacoes_melhoria.csv
 outputs/etapa5/validacoes_etapa5.csv
 outputs/etapa5/autoaudit_etapa5.csv
@@ -299,7 +300,13 @@ def precificacao_desconto(base: pd.DataFrame, universo: str, precos: pd.DataFram
         (g["PRECO_LISTA_EMBALAGEM"] - g["PRECO_PRATICADO_VENDA"]) / g["PRECO_LISTA_EMBALAGEM"] * 100,
         np.nan,
     )
-    g["FLAG_PRECO_ACIMA_LISTA"] = (g["DESCONTO_EFETIVO_PCT"] < 0).astype("Int64")
+    # "Acima da lista" = ESTRITAMENTE acima, com tolerancia de arredondamento.
+    # Combinacoes em que o preco praticado == preco de lista geram desconto 0, mas
+    # a divisao em float pode produzir -0,0 / ruido negativo minusculo (~1e-14) e
+    # inflar a contagem. Arredondar para 2 casas antes de comparar (< 0) descarta
+    # esses empates de fronteira, mantendo apenas os precos de fato acima da lista.
+    # Mesma definicao usada no resumo (n_acima_lista), para o CSV e o texto baterem.
+    g["FLAG_PRECO_ACIMA_LISTA"] = (g["DESCONTO_EFETIVO_PCT"].round(2) < 0).astype("Int64")
     g["FLAG_SEM_PRECO_LISTA"] = (~valido).astype(int)
     g.insert(0, "UNIVERSO", universo)
     return g.sort_values(["UNIVERSO", "RECEITA"], ascending=[True, False]).reset_index(drop=True)
@@ -392,10 +399,13 @@ def candidatos_repricing(
         return " + ".join(m)
 
     cand["MOTIVOS"] = cand.apply(motivos_txt, axis=1)
+
+    # ── Ranking 1: RISCO analitico (score de confianca) ───────────────────────
     # Prioridade combina numero de sinais (confianca) e receita (valor da
     # oportunidade): score = N_MOTIVOS + percentil de receita entre candidatos.
-    # Assim itens de alta receita com sinal sobem, sem deixar de destacar os de
-    # multiplos sinais simultaneos.
+    # Bom para triagem: destaca itens com multiplos sinais simultaneos. Mas, por
+    # dar peso alto a contagem de sinais, pode enterrar uma unica oportunidade
+    # grande (alta receita, um sinal) atras de varios itens pequenos multi-sinal.
     cand["RECEITA_PERCENTIL"] = cand["RECEITA"].rank(pct=True)
     cand["SCORE_PRIORIDADE"] = cand["N_MOTIVOS"] + cand["RECEITA_PERCENTIL"]
     cand = cand.sort_values(
@@ -408,6 +418,32 @@ def candidatos_repricing(
     limite_media = max(limite_alta + 1, int(np.ceil(total * 0.30)))
     cand["FAIXA_PRIORIDADE"] = np.select(
         [cand["RANK_PRIORIDADE"] <= limite_alta, cand["RANK_PRIORIDADE"] <= limite_media],
+        ["ALTA", "MEDIA"],
+        default="MONITORAR",
+    )
+
+    # ── Ranking 2: IMPACTO comercial (dinheiro em jogo) ───────────────────────
+    # Ordena por magnitude financeira, nao por quantidade de sinais. A magnitude
+    # do problema de preco (%) e o maior sinal disponivel do item: desconto
+    # efetivo acima de 0, desvio absoluto vs a mediana da rede, ou o quanto a
+    # margem esta abaixo do alvo (LIMIAR_MARGEM_PCT). Impacto estimado = receita
+    # exposta x magnitude. Complementa (nao substitui) o ranking de risco: e a
+    # "fila comercial de impacto" que traz as grandes oportunidades para o topo.
+    mag_desconto = cand["DESCONTO_EFETIVO_PCT"].clip(lower=0).fillna(0.0).to_numpy()
+    mag_faixa = (
+        cand["DESVIO_VS_MEDIANA_PCT"].abs().where(cand["MOTIVO_PRECO_FORA_FAIXA"] == 1, 0.0).fillna(0.0).to_numpy()
+    )
+    mag_margem = (
+        (LIMIAR_MARGEM_PCT - cand["MARGEM_BRUTA_PCT"]).where(cand["MOTIVO_MARGEM_BAIXA"] == 1, 0.0)
+        .clip(lower=0).fillna(0.0).to_numpy()
+    )
+    cand["MAGNITUDE_SINAL_PCT"] = np.maximum.reduce([mag_desconto, mag_faixa, mag_margem])
+    cand["IMPACTO_FINANCEIRO_ESTIMADO"] = cand["RECEITA"] * cand["MAGNITUDE_SINAL_PCT"] / 100.0
+    cand["RANK_IMPACTO"] = (
+        cand["IMPACTO_FINANCEIRO_ESTIMADO"].rank(ascending=False, method="first").astype(int)
+    )
+    cand["FAIXA_IMPACTO"] = np.select(
+        [cand["RANK_IMPACTO"] <= limite_alta, cand["RANK_IMPACTO"] <= limite_media],
         ["ALTA", "MEDIA"],
         default="MONITORAR",
     )
@@ -430,6 +466,7 @@ def candidatos_repricing(
 
     cols = [
         "UNIVERSO", "RANK_PRIORIDADE", "FAIXA_PRIORIDADE", "SCORE_PRIORIDADE",
+        "RANK_IMPACTO", "FAIXA_IMPACTO", "IMPACTO_FINANCEIRO_ESTIMADO", "MAGNITUDE_SINAL_PCT",
         "N_MOTIVOS", "MOTIVOS",
         "COD_EMPRESA", "CD_CIDADE", "CD_ESTADO", "CODIGO", "DESCRICAO", "NIVEL_1",
         "EMBALAGEM", "CURVA_ABC_RECEITA", "RECEITA",
@@ -607,7 +644,19 @@ def validar_etapa5(
 
 
 # ── Autoaudit (revisao critica antes/depois) ──────────────────────────────────
-def construir_autoaudit(vendas_completo, custo_completo, margem_sku_completo, dispersao):
+def calcular_naive_amplitude(vendas_completo: pd.DataFrame) -> int:
+    """Leitura ingenua de dispersao de preco: nº de SKUs cuja amplitude de preco
+    BRUTO (`PRECO_UNIT_MEDIO`) entre linhas passa de 30%, com todas as lojas e
+    embalagens misturadas. Reproduz o achado exploratorio inicial (~2,6k SKUs)
+    que a Etapa 5 depois refina para 46 (CV por SKU x embalagem na rede fisica).
+    Valor unico usado no autoaudit E no resumo, para os textos nao divergirem.
+    """
+    mm = vendas_completo.groupby("CODIGO")["PRECO_UNIT_MEDIO"].agg(["min", "max", "count"])
+    mm = mm[mm["count"] >= 2]
+    return int((safe_div(mm["max"] - mm["min"], mm["min"]) > 0.30).sum())
+
+
+def construir_autoaudit(vendas_completo, custo_completo, margem_sku_completo, dispersao, naive_amp):
     """Revisao critica dos proprios resultados: problema, correcao e impacto."""
     linhas = []
     cost_skus = set(custo_completo.loc[custo_completo["CUSTO_MEDIO_ARM"].notna(), "CODIGO"])
@@ -647,10 +696,7 @@ def construir_autoaudit(vendas_completo, custo_completo, margem_sku_completo, di
 
     # C. Mistura de embalagem (e atacado) na dispersao de preco.
     #    Naive = amplitude de preco BRUTO (PRECO_UNIT_MEDIO) por SKU, todas as lojas,
-    #    embalagens misturadas - reproduz o achado documentado de ~2,5k SKUs.
-    mm = vendas_completo.groupby("CODIGO")["PRECO_UNIT_MEDIO"].agg(["min", "max", "count"])
-    mm = mm[mm["count"] >= 2]
-    naive_amp = int((safe_div(mm["max"] - mm["min"], mm["min"]) > 0.30).sum())
+    #    embalagens misturadas (valor unico calculado em calcular_naive_amplitude).
     #    Corrigido = mesma metrica (amplitude) por SKU x embalagem na rede fisica,
     #    com preco normalizado para a unidade de armazenagem.
     disp_fis = dispersao[dispersao["UNIVERSO"] == UNIVERSO_FISICO]
@@ -658,7 +704,7 @@ def construir_autoaudit(vendas_completo, custo_completo, margem_sku_completo, di
     corr_cv = int((disp_fis["CV_PRECO"] > 0.30).sum())
     linhas.append({
         "PROBLEMA": "Mistura de embalagem (e atacado) na dispersao de preco",
-        "DESCRICAO": "Comparar preco do mesmo SKU entre lojas sem separar embalagem e incluindo a Loja 93 mistura caixa com unidade e atacado com varejo - foi o que gerou a leitura ingenua de '2.549 SKUs com variacao >30%'.",
+        "DESCRICAO": f"Comparar preco do mesmo SKU entre lojas sem separar embalagem e incluindo a Loja 93 mistura caixa com unidade e atacado com varejo - foi o que gerou a leitura ingenua de '{fmt_num(naive_amp)} SKUs com amplitude de preco bruto >30%'.",
         "CORRECAO": "Dispersao por SKU x EMBALAGEM, com preco em unidade de armazenagem, dentro do universo (rede fisica separada do atacado).",
         "ANTES": f"{naive_amp} SKUs com amplitude de preco bruto >30% (todas as lojas, embalagens misturadas).",
         "DEPOIS": f"{corr_amp} SKUs com amplitude >30% pela mesma metrica na rede fisica por embalagem; pelo CV, apenas {corr_cv} SKUs com CV>30%.",
@@ -676,7 +722,7 @@ def salvar_csv(df: pd.DataFrame, nome: str) -> None:
 # ── Resumo executivo e documentacao tecnica ───────────────────────────────────
 def gerar_resumo(
     total_completo, total_fisico, total_loja93, categorias_n1, lojas, margem_sku,
-    precos_desc, dispersao, candidatos, autoaudit, validacoes, n_skus_compra,
+    precos_desc, dispersao, candidatos, autoaudit, validacoes, n_skus_compra, naive_amp,
 ):
     tc = total_completo.iloc[0]
     tf = total_fisico.iloc[0]
@@ -708,9 +754,12 @@ def gerar_resumo(
 
     desc_fis = precos_desc[(precos_desc["UNIVERSO"] == UNIVERSO_FISICO) & precos_desc["DESCONTO_EFETIVO_PCT"].notna()]
     desc_medio = float(np.average(desc_fis["DESCONTO_EFETIVO_PCT"], weights=desc_fis["RECEITA"]))
-    n_acima_lista = int((desc_fis["DESCONTO_EFETIVO_PCT"] < 0).sum())
+    # Mesma definicao da FLAG_PRECO_ACIMA_LISTA (round(2) < 0): descarta empates de
+    # fronteira (preco == lista) e conta so o que esta estritamente acima da lista.
+    n_acima_lista = int((desc_fis["DESCONTO_EFETIVO_PCT"].round(2) < 0).sum())
 
     cand_fis = candidatos[candidatos["UNIVERSO"] == UNIVERSO_FISICO]
+    top_imp = cand_fis.sort_values("IMPACTO_FINANCEIRO_ESTIMADO", ascending=False).iloc[0]
 
     disp_fis = dispersao[(dispersao["UNIVERSO"] == UNIVERSO_FISICO) & (dispersao["EMBALAGEM"] == 0)]
     disp_alta = int((disp_fis["CV_PRECO"] > 0.30).sum())
@@ -781,10 +830,17 @@ e o analogo do achado das Etapas 1/2 ("88% vendem sem compra registrada"):
   lista (desconto negativo), sinal de lista possivelmente desatualizada.
 - Dispersao de preco entre lojas (rede fisica, embalagem 0): apenas
   {fmt_num(disp_alta)} SKUs com CV>30% - bem abaixo da leitura ingenua de
-  "2.549 SKUs com variacao >30%", que misturava embalagem e atacado.
+  {fmt_num(naive_amp)} SKUs com amplitude de preco bruto >30% (metrica diferente:
+  amplitude do preco bruto entre linhas, misturando embalagem e atacado).
 - Candidatos a repricing na rede fisica: {fmt_num(len(cand_fis))} combinacoes
   loja x produto x embalagem com pelo menos um sinal (margem baixa/negativa,
-  desconto alto ou preco fora da faixa).
+  desconto alto ou preco fora da faixa). Dois rankings convivem: **risco**
+  (nº de sinais + receita, para triagem) e **impacto** (receita x magnitude do
+  sinal, para a fila comercial). O maior candidato por impacto na rede fisica e o
+  SKU {int(top_imp['CODIGO'])} ({str(top_imp['DESCRICAO']).strip()}) na loja
+  {int(top_imp['COD_EMPRESA'])}, com {fmt_brl(top_imp['RECEITA'])} de receita
+  exposta (impacto estimado {fmt_brl(top_imp['IMPACTO_FINANCEIRO_ESTIMADO'])}),
+  que no ranking de risco cai para o rank {int(top_imp['RANK_PRIORIDADE'])}.
 
 ## Revisao de qualidade (autoaudit antes/depois)
 
@@ -890,7 +946,14 @@ lojas do universo. Candidatos e dispersao da rede fisica nao incluem a Loja 93
 - `margem_total_universo.csv`: margem consolidada por universo (fonte dos KPIs do resumo/dashboard).
 - `precificacao_desconto.csv`: preco praticado vs lista e desconto efetivo, por embalagem.
 - `dispersao_preco_lojas.csv`: dispersao por SKU entre lojas, por embalagem.
-- `candidatos_repricing.csv`: ranking de oportunidades de repricing.
+- `candidatos_repricing.csv`: candidatos a repricing com dois rankings.
+  **Ranking de risco** (`RANK_PRIORIDADE`/`FAIXA_PRIORIDADE`, score = nº de sinais
+  + percentil de receita): fila de triagem, destaca itens multi-sinal.
+  **Ranking de impacto** (`RANK_IMPACTO`/`FAIXA_IMPACTO`, `IMPACTO_FINANCEIRO_ESTIMADO`
+  = receita x magnitude do sinal): fila comercial por dinheiro em jogo, traz as
+  grandes oportunidades ao topo. Os dois convivem; nenhum substitui o outro.
+- `candidatos_repricing_impacto.csv`: os mesmos candidatos ja ordenados pelo
+  ranking de impacto, para leitura direta da fila comercial.
 - `recomendacoes_melhoria.csv`: melhorias de dados/modelagem/processo.
 - `validacoes_etapa5.csv`: reconciliacoes numericas.
 - `autoaudit_etapa5.csv`: revisao critica antes/depois.
@@ -969,9 +1032,10 @@ def main() -> None:
     recomendacoes = gerar_recomendacoes_melhoria()
 
     print("Autoaudit (antes/depois)...")
+    naive_amp = calcular_naive_amplitude(vendas)
     autoaudit = construir_autoaudit(
         vendas, custo_completo,
-        margem_sku[margem_sku["UNIVERSO"] == UNIVERSO_COMPLETO], dispersao)
+        margem_sku[margem_sku["UNIVERSO"] == UNIVERSO_COMPLETO], dispersao, naive_amp)
 
     print("Validando reconciliacoes...")
     validacoes = validar_etapa5(
@@ -987,6 +1051,12 @@ def main() -> None:
     salvar_csv(precos_desc, "precificacao_desconto.csv")
     salvar_csv(dispersao, "dispersao_preco_lojas.csv")
     salvar_csv(candidatos, "candidatos_repricing.csv")
+    # Mesma base, ordenada pela fila de IMPACTO comercial (dinheiro em jogo),
+    # complementar ao ranking de risco acima. Documentado nos dois rankings.
+    candidatos_impacto = candidatos.sort_values(
+        ["UNIVERSO", "IMPACTO_FINANCEIRO_ESTIMADO"], ascending=[True, False]
+    ).reset_index(drop=True)
+    salvar_csv(candidatos_impacto, "candidatos_repricing_impacto.csv")
     salvar_csv(recomendacoes, "recomendacoes_melhoria.csv")
     salvar_csv(validacoes, "validacoes_etapa5.csv")
     salvar_csv(autoaudit, "autoaudit_etapa5.csv")
@@ -996,7 +1066,7 @@ def main() -> None:
     total_loja93 = total[total["UNIVERSO"] == ESCOPO_LOJA93].reset_index(drop=True)
     n_skus_compra = int(compras["CODIGO"].nunique())
     resumo = gerar_resumo(total_completo, total_fisico, total_loja93, categorias_n1, lojas, margem_sku,
-                          precos_desc, dispersao, candidatos, autoaudit, validacoes, n_skus_compra)
+                          precos_desc, dispersao, candidatos, autoaudit, validacoes, n_skus_compra, naive_amp)
     (OUT / "resumo_etapa5.md").write_text(resumo, encoding="utf-8")
     (OUT / "documentacao_tecnica_etapa5.md").write_text(gerar_documentacao_tecnica(), encoding="utf-8")
     salvar_csv(total, "margem_total_universo.csv")

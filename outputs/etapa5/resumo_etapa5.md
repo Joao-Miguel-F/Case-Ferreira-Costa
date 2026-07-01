@@ -57,14 +57,21 @@ e o analogo do achado das Etapas 1/2 ("88% vendem sem compra registrada"):
   da rede fisica vendem com margem negativa (preco < custo), concentrados em
   utilidades domesticas/loucas de baixo giro - sinalizados, nao silenciados.
 - Desconto efetivo medio ponderado na rede fisica: 17,4%.
-  2.264 combinacoes loja x produto x embalagem vendem ACIMA da
+  2.079 combinacoes loja x produto x embalagem vendem ACIMA da
   lista (desconto negativo), sinal de lista possivelmente desatualizada.
 - Dispersao de preco entre lojas (rede fisica, embalagem 0): apenas
   46 SKUs com CV>30% - bem abaixo da leitura ingenua de
-  "2.549 SKUs com variacao >30%", que misturava embalagem e atacado.
+  2.619 SKUs com amplitude de preco bruto >30% (metrica diferente:
+  amplitude do preco bruto entre linhas, misturando embalagem e atacado).
 - Candidatos a repricing na rede fisica: 3.260 combinacoes
   loja x produto x embalagem com pelo menos um sinal (margem baixa/negativa,
-  desconto alto ou preco fora da faixa).
+  desconto alto ou preco fora da faixa). Dois rankings convivem: **risco**
+  (nº de sinais + receita, para triagem) e **impacto** (receita x magnitude do
+  sinal, para a fila comercial). O maior candidato por impacto na rede fisica e o
+  SKU 480680 (REFRIG. 2P 391L FF RT38DG61  IX MBIV) na loja
+  3, com R$ 1.723.994,28 de receita
+  exposta (impacto estimado R$ 753.857,57),
+  que no ranking de risco cai para o rank 226.
 
 ## Revisao de qualidade (autoaudit antes/depois)
 

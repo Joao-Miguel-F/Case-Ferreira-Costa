@@ -61,7 +61,14 @@ lojas do universo. Candidatos e dispersao da rede fisica nao incluem a Loja 93
 - `margem_total_universo.csv`: margem consolidada por universo (fonte dos KPIs do resumo/dashboard).
 - `precificacao_desconto.csv`: preco praticado vs lista e desconto efetivo, por embalagem.
 - `dispersao_preco_lojas.csv`: dispersao por SKU entre lojas, por embalagem.
-- `candidatos_repricing.csv`: ranking de oportunidades de repricing.
+- `candidatos_repricing.csv`: candidatos a repricing com dois rankings.
+  **Ranking de risco** (`RANK_PRIORIDADE`/`FAIXA_PRIORIDADE`, score = nº de sinais
+  + percentil de receita): fila de triagem, destaca itens multi-sinal.
+  **Ranking de impacto** (`RANK_IMPACTO`/`FAIXA_IMPACTO`, `IMPACTO_FINANCEIRO_ESTIMADO`
+  = receita x magnitude do sinal): fila comercial por dinheiro em jogo, traz as
+  grandes oportunidades ao topo. Os dois convivem; nenhum substitui o outro.
+- `candidatos_repricing_impacto.csv`: os mesmos candidatos ja ordenados pelo
+  ranking de impacto, para leitura direta da fila comercial.
 - `recomendacoes_melhoria.csv`: melhorias de dados/modelagem/processo.
 - `validacoes_etapa5.csv`: reconciliacoes numericas.
 - `autoaudit_etapa5.csv`: revisao critica antes/depois.
