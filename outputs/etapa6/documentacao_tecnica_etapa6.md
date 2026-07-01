@@ -18,10 +18,15 @@ reconciliada desses dois escopos.
 ## Formulas
 
 - Demanda 90 dias = `VENDA_MEDIA_MES_PROJECAO * 3`.
+- Dias de cobertura recalculados = `ESTOQUE_PROJ / VENDA_MEDIA_MES_PROJECAO * 30`
+  (0 quando estoque <= 0). `STATUS_ESTOQUE_RECALC` deriva desses dias com os
+  mesmos cortes da Etapa 2 (<=30 CRITICO, <=90 ATENCAO), agora tambem para a
+  Loja 93. Reproduz o status da Etapa 2 na rede fisica.
 - Estoque utilizavel = `max(ESTOQUE_PROJ, 0)`.
 - Necessidade bruta = `max(demanda_90d - estoque_utilizavel, 0)`.
-- Quantidade recomendada = teto da necessidade bruta, somente para status
-  `EM RUPTURA`, `CRITICO` ou `ATENCAO` e com demanda observada.
+- Quantidade recomendada = teto da necessidade bruta, somente para
+  `STATUS_ESTOQUE_RECALC` em `EM RUPTURA`, `CRITICO` ou `ATENCAO` e com demanda
+  observada.
 - Investimento estimado = `QTD_RECOMENDADA_ARM * CUSTO_MEDIO_ARM`, somente
   quando o custo medio existe na Etapa 5 para o mesmo universo.
 
@@ -38,7 +43,8 @@ reconciliada desses dois escopos.
 `validacoes_etapa6.csv` cobre reconciliacao de receita com Etapa 3, soma dos
 universos, fechamento de agregados por categoria/loja, restricao de compras a
 status elegiveis e garantia de que investimento nao foi imputado para custo
-ausente.
+ausente. Verifica ainda que o status recalculado reproduz o da Etapa 2 na rede
+fisica e que nenhum par com demanda e cobertura < 90 dias fica fora da fila.
 
 ## Arquivos gerados
 

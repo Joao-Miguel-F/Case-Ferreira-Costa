@@ -4,11 +4,13 @@ Receita historica plano vs Etapa 3 - rede fisica,329234755.542707,329234755.5427
 Receita historica plano vs Etapa 3 - Loja 93,153280992.573136,153280992.573136,0.000000,OK
 REDE_COMPLETA = fisica + Loja 93 (PARES_LOJA_SKU),28721.000000,28721.000000,0.000000,OK
 REDE_COMPLETA = fisica + Loja 93 (RECEITA_HISTORICA_TOTAL),482515748.115843,482515748.115843,-0.000000,OK
-REDE_COMPLETA = fisica + Loja 93 (QTD_RECOMENDADA_ARM),1019445.000000,1019445.000000,0.000000,OK
-Investimento conhecido: REDE_COMPLETA = fisica + Loja 93,7620484.356171,7620484.356171,0.000000,OK
+REDE_COMPLETA = fisica + Loja 93 (QTD_RECOMENDADA_ARM),1019914.000000,1019914.000000,0.000000,OK
+Investimento conhecido: REDE_COMPLETA = fisica + Loja 93,7719604.019171,7719604.019171,-0.000000,OK
 Categoria N1: receita total vs Etapa 4 - rede fisica (max abs),0.000000,0.000000,0.000000,OK
 Toda compra recomendada possui demanda observada,1.000000,1.000000,0.000000,OK
 Toda compra recomendada esta em status elegivel,1.000000,1.000000,0.000000,OK
+Rede fisica: status recalculado == status Etapa 2,1.000000,1.000000,0.000000,OK
+Todo par com demanda e cobertura < 90 dias entra na fila de compra,1.000000,1.000000,0.000000,OK
 Investimento nao foi imputado para custo ausente,1.000000,1.000000,0.000000,OK
 Margem so marcada como valida onde ha custo,1.000000,1.000000,0.000000,OK
 Loja 93 fora do universo operacional fisico,1.000000,1.000000,0.000000,OK

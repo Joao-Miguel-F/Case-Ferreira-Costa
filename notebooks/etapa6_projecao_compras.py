@@ -23,6 +23,11 @@ Premissas e decisoes metodologicas
   24 meses. Para a rede fisica, essa media reconcilia com a Etapa 2; para a
   Loja 93, a Etapa 6 recalcula a demanda porque a cobertura da Etapa 2 excluia
   a Loja 93 da referencia de consumo por decisao metodologica.
+- Status de cobertura: a Etapa 6 recalcula dias de cobertura e status a partir
+  dessa demanda propria (`STATUS_ESTOQUE_RECALC`). Para a rede fisica reproduz
+  o status da Etapa 2; para a Loja 93 permite que o par atinja CRITICO/ATENCAO
+  com sua demanda B2B real, em vez de ficar preso em SEM VENDA/EM RUPTURA. O
+  gate de compra usa esse status recalculado.
 - Ausencia de venda observada nao vira zero projetado para compra. Pares sem
   demanda observada recebem `MOTIVO_SEM_COMPRA = SEM_DEMANDA_OBSERVADA` e nao
   entram na quantidade recomendada.
@@ -163,7 +168,6 @@ def carregar_base_plano() -> pd.DataFrame:
         .agg(
             RECEITA_VENDAS=("RECEITA", "sum"),
             QTD_ARM_VENDIDA=("QTD_ARMAZENAGEM", "sum"),
-            TRANSACOES=("CODIGO", "size"),
         )
         .reset_index()
     )
@@ -185,6 +189,26 @@ def carregar_base_plano() -> pd.DataFrame:
         UNIVERSO_FISICO,
     )
     base["FLAG_LOJA93"] = (base["COD_EMPRESA"] == LOJA_ATACADO).astype(int)
+
+    # Recalcula cobertura/status com a demanda da propria etapa. Para a rede
+    # fisica isso reproduz o status da Etapa 2 (mesma demanda). Para a Loja 93,
+    # que foi excluida da referencia de consumo na Etapa 2, passa a classificar
+    # com a demanda B2B real, em vez de herdar "SEM VENDA"/"EM RUPTURA" de uma
+    # demanda forcada a zero. Sem isso o gate de compra nunca alcancaria
+    # CRITICO/ATENCAO na Loja 93.
+    demanda_status = base["VENDA_MEDIA_MES_PROJECAO"].fillna(0.0)
+    dias = safe_div(base["ESTOQUE_PROJ"] * 30, demanda_status)
+    base["DIAS_COBERTURA_PROJ"] = np.where(base["ESTOQUE_PROJ"] <= 0, 0.0, dias)
+    base["STATUS_ESTOQUE_RECALC"] = np.select(
+        [
+            base["ESTOQUE_PROJ"] <= 0,
+            demanda_status <= 0,
+            base["DIAS_COBERTURA_PROJ"] <= 30,
+            base["DIAS_COBERTURA_PROJ"] <= 90,
+        ],
+        ["EM RUPTURA", "SEM VENDA", "CRITICO", "ATENCAO"],
+        default="SAUDAVEL",
+    )
     return base
 
 
@@ -236,13 +260,14 @@ def calcular_plano_operacional(base: pd.DataFrame) -> pd.DataFrame:
     out = base.copy()
     out["ESTOQUE_UTILIZAVEL_ARM"] = np.where(out["ESTOQUE_PROJ"] > 0, out["ESTOQUE_PROJ"], 0.0)
     out["DEMANDA_90D_ARM"] = out["VENDA_MEDIA_MES_PROJECAO"] * MESES_HORIZONTE
-    out["FLAG_STATUS_COMPRA"] = out["STATUS_ESTOQUE_NORM"].isin(STATUS_COMPRA).astype(int)
+    out["FLAG_STATUS_COMPRA"] = out["STATUS_ESTOQUE_RECALC"].isin(STATUS_COMPRA).astype(int)
     out["NECESSIDADE_BRUTA_ARM"] = np.where(
         (out["FLAG_STATUS_COMPRA"] == 1) & (out["FLAG_DEMANDA_OBSERVADA"] == 1),
         out["DEMANDA_90D_ARM"] - out["ESTOQUE_UTILIZAVEL_ARM"],
         np.nan,
     )
-    out["NECESSIDADE_BRUTA_ARM"] = out["NECESSIDADE_BRUTA_ARM"].where(out["NECESSIDADE_BRUTA_ARM"] > 0, 0)
+    # clip preserva NaN nos pares nao avaliados (mantem "sem necessidade" != "nao avaliado" no CSV).
+    out["NECESSIDADE_BRUTA_ARM"] = out["NECESSIDADE_BRUTA_ARM"].clip(lower=0)
     out["QTD_RECOMENDADA_ARM"] = np.where(
         out["NECESSIDADE_BRUTA_ARM"] > 0,
         np.ceil(out["NECESSIDADE_BRUTA_ARM"]),
@@ -263,7 +288,7 @@ def calcular_plano_operacional(base: pd.DataFrame) -> pd.DataFrame:
     abc_peso = {"A": 3, "B": 2, "C": 1}
     receita_pct = out["RECEITA_TOTAL"].rank(pct=True).fillna(0)
     out["SCORE_PRIORIDADE"] = (
-        out["STATUS_ESTOQUE_NORM"].map(status_peso).fillna(0)
+        out["STATUS_ESTOQUE_RECALC"].map(status_peso).fillna(0)
         + out["CURVA_ABC_RECEITA"].map(abc_peso).fillna(0)
         + receita_pct
         + np.where(out["FLAG_CUSTO_VALIDO"] == 1, 0.25, 0)
@@ -314,7 +339,7 @@ def acao_recomendada(r: pd.Series) -> str:
     return "Priorizar compra para recompor cobertura de 90 dias, validando saldo fisico antes do pedido."
 
 
-def agregar_universo(plano_operacional: pd.DataFrame, universo: str, base: pd.DataFrame) -> pd.DataFrame:
+def agregar_universo(universo: str, base: pd.DataFrame) -> pd.DataFrame:
     d = base.copy()
     compra = d[d["QTD_RECOMENDADA_ARM"] > 0]
     inv_conhecido = compra["INVESTIMENTO_ESTIMADO"].sum(min_count=1)
@@ -326,9 +351,9 @@ def agregar_universo(plano_operacional: pd.DataFrame, universo: str, base: pd.Da
                 "SKUS": d["CODIGO"].nunique(),
                 "LOJAS": d["COD_EMPRESA"].nunique(),
                 "RECEITA_HISTORICA_TOTAL": d["RECEITA_TOTAL"].sum(),
-                "PARES_RUPTURA_CRITICO": d["STATUS_ESTOQUE_NORM"].isin(["EM RUPTURA", "CRITICO"]).sum(),
+                "PARES_RUPTURA_CRITICO": d["STATUS_ESTOQUE_RECALC"].isin(["EM RUPTURA", "CRITICO"]).sum(),
                 "RECEITA_RUPTURA_CRITICO": d.loc[
-                    d["STATUS_ESTOQUE_NORM"].isin(["EM RUPTURA", "CRITICO"]), "RECEITA_TOTAL"
+                    d["STATUS_ESTOQUE_RECALC"].isin(["EM RUPTURA", "CRITICO"]), "RECEITA_TOTAL"
                 ].sum(),
                 "PARES_COM_COMPRA_RECOMENDADA": len(compra),
                 "SKUS_COM_COMPRA_RECOMENDADA": compra["CODIGO"].nunique(),
@@ -386,9 +411,9 @@ def preparar_saidas(plano_operacional: pd.DataFrame):
 
     total = pd.concat(
         [
-            agregar_universo(plano_operacional, UNIVERSO_COMPLETO, completo),
-            agregar_universo(plano_operacional, UNIVERSO_FISICO, fisico),
-            agregar_universo(plano_operacional, ESCOPO_LOJA93, loja93),
+            agregar_universo(UNIVERSO_COMPLETO, completo),
+            agregar_universo(UNIVERSO_FISICO, fisico),
+            agregar_universo(ESCOPO_LOJA93, loja93),
         ],
         ignore_index=True,
     )
@@ -499,7 +524,30 @@ def validar_etapa6(plano: pd.DataFrame, total: pd.DataFrame, categorias: pd.Data
     )
     add_bool(
         "Toda compra recomendada esta em status elegivel",
-        bool(plano.loc[plano["QTD_RECOMENDADA_ARM"] > 0, "STATUS_ESTOQUE_NORM"].isin(STATUS_COMPRA).all()),
+        bool(plano.loc[plano["QTD_RECOMENDADA_ARM"] > 0, "STATUS_ESTOQUE_RECALC"].isin(STATUS_COMPRA).all()),
+    )
+    add_bool(
+        "Rede fisica: status recalculado == status Etapa 2",
+        bool(
+            (
+                plano.loc[plano["FLAG_LOJA93"] == 0, "STATUS_ESTOQUE_RECALC"]
+                == plano.loc[plano["FLAG_LOJA93"] == 0, "STATUS_ESTOQUE_NORM"]
+            ).all()
+        ),
+    )
+    add_bool(
+        "Todo par com demanda e cobertura < 90 dias entra na fila de compra",
+        bool(
+            (
+                plano.loc[
+                    (plano["FLAG_DEMANDA_OBSERVADA"] == 1)
+                    & (plano["ESTOQUE_PROJ"] > 0)
+                    & (plano["DIAS_COBERTURA_PROJ"] < HORIZONTE_DIAS),
+                    "QTD_RECOMENDADA_ARM",
+                ]
+                > 0
+            ).all()
+        ),
     )
     add_bool(
         "Investimento nao foi imputado para custo ausente",
@@ -543,6 +591,9 @@ def construir_autoaudit(plano: pd.DataFrame, total: pd.DataFrame) -> pd.DataFram
         ((plano["COD_EMPRESA"] == LOJA_ATACADO) & (plano["VENDA_MEDIA_MES_ETAPA2"] == 0) & (plano["FLAG_DEMANDA_OBSERVADA"] == 1)).sum()
     )
     qtd_neg = int((plano["ESTOQUE_PROJ"] < 0).sum())
+    loja93_reclass = int(
+        ((plano["COD_EMPRESA"] == LOJA_ATACADO) & plano["STATUS_ESTOQUE_RECALC"].isin(["CRITICO", "ATENCAO"])).sum()
+    )
     return pd.DataFrame(
         [
             {
@@ -561,9 +612,9 @@ def construir_autoaudit(plano: pd.DataFrame, total: pd.DataFrame) -> pd.DataFram
             },
             {
                 "RISCO": "Apagar demanda da Loja 93/B2B",
-                "COMO_PODERIA_ERRAR": "Reusar diretamente a venda media da Etapa 2, que excluiu a Loja 93 da referencia de consumo.",
-                "CONTROLE_APLICADO": "Demanda da Etapa 6 e recalculada a partir das vendas do proprio par, incluindo Loja 93 em escopo separado.",
-                "EVIDENCIA": f"{loja93_vmm_etapa2_zero} pares da Loja 93 tinham venda observada e venda media Etapa 2 igual a zero; {loja93_venda} pares da Loja 93 tem demanda propria.",
+                "COMO_PODERIA_ERRAR": "Reusar a venda media da Etapa 2 (que excluiu a Loja 93) na demanda E no status de cobertura, deixando a Loja 93 presa em SEM VENDA/EM RUPTURA e fora da fila.",
+                "CONTROLE_APLICADO": "Demanda e status de cobertura da Etapa 6 sao recalculados a partir das vendas do proprio par; a Loja 93 tambem pode atingir CRITICO/ATENCAO com sua demanda B2B real.",
+                "EVIDENCIA": f"{loja93_vmm_etapa2_zero} pares da Loja 93 tinham venda observada e venda media Etapa 2 igual a zero; {loja93_venda} pares da Loja 93 tem demanda propria; {loja93_reclass} pares da Loja 93 foram reclassificados como CRITICO/ATENCAO pela cobertura recalculada.",
                 "RISCO_REMANESCENTE": "B2B pode ter pedidos grandes e intermitentes; media historica suaviza picos.",
             },
             {
@@ -696,10 +747,15 @@ reconciliada desses dois escopos.
 ## Formulas
 
 - Demanda 90 dias = `VENDA_MEDIA_MES_PROJECAO * {MESES_HORIZONTE:.0f}`.
+- Dias de cobertura recalculados = `ESTOQUE_PROJ / VENDA_MEDIA_MES_PROJECAO * 30`
+  (0 quando estoque <= 0). `STATUS_ESTOQUE_RECALC` deriva desses dias com os
+  mesmos cortes da Etapa 2 (<=30 CRITICO, <=90 ATENCAO), agora tambem para a
+  Loja 93. Reproduz o status da Etapa 2 na rede fisica.
 - Estoque utilizavel = `max(ESTOQUE_PROJ, 0)`.
 - Necessidade bruta = `max(demanda_90d - estoque_utilizavel, 0)`.
-- Quantidade recomendada = teto da necessidade bruta, somente para status
-  `EM RUPTURA`, `CRITICO` ou `ATENCAO` e com demanda observada.
+- Quantidade recomendada = teto da necessidade bruta, somente para
+  `STATUS_ESTOQUE_RECALC` em `EM RUPTURA`, `CRITICO` ou `ATENCAO` e com demanda
+  observada.
 - Investimento estimado = `QTD_RECOMENDADA_ARM * CUSTO_MEDIO_ARM`, somente
   quando o custo medio existe na Etapa 5 para o mesmo universo.
 
@@ -716,7 +772,8 @@ reconciliada desses dois escopos.
 `validacoes_etapa6.csv` cobre reconciliacao de receita com Etapa 3, soma dos
 universos, fechamento de agregados por categoria/loja, restricao de compras a
 status elegiveis e garantia de que investimento nao foi imputado para custo
-ausente.
+ausente. Verifica ainda que o status recalculado reproduz o da Etapa 2 na rede
+fisica e que nenhum par com demanda e cobertura < 90 dias fica fora da fila.
 
 ## Arquivos gerados
 
@@ -769,6 +826,8 @@ def main() -> None:
         "NIVEL_1",
         "STATUS_ESTOQUE_ORIGINAL",
         "STATUS_ESTOQUE_NORM",
+        "STATUS_ESTOQUE_RECALC",
+        "DIAS_COBERTURA_PROJ",
         "ESTOQUE_PROJ",
         "ESTOQUE_UTILIZAVEL_ARM",
         "VENDA_MEDIA_MES_ETAPA2",

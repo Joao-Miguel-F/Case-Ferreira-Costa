@@ -233,12 +233,12 @@ Arquivos auditáveis em `outputs/etapa5/`: `margem_produtos.csv`, `margem_catego
 
 ### Etapa 6 — Projeção de Compras para o Próximo Período
 
-A Etapa 6 transforma a cobertura e a priorização das etapas anteriores em um plano operacional de compra para **90 dias**, no grão loja×SKU. A quantidade recomendada usa demanda histórica do próprio par, estoque projetado utilizável e status de cobertura; o investimento financeiro só é estimado quando existe custo válido na Etapa 5. A Loja 93/B2B é tratada em escopo separado e os totais fecham em `REDE_COMPLETA`.
+A Etapa 6 transforma a cobertura e a priorização das etapas anteriores em um plano operacional de compra para **90 dias**, no grão loja×SKU. A quantidade recomendada usa demanda histórica do próprio par, estoque projetado utilizável e status de cobertura; o investimento financeiro só é estimado quando existe custo válido na Etapa 5. A Loja 93/B2B é tratada em escopo separado — com demanda **e status de cobertura recalculados** a partir das próprias vendas B2B — e os totais fecham em `REDE_COMPLETA`.
 
 **Achados principais:**
-- Rede completa: **20.324 pares loja×SKU** com compra recomendada, somando **1.019.445 unidades de armazenagem**.
+- Rede completa: **20.357 pares loja×SKU** com compra recomendada, somando **1.019.914 unidades de armazenagem**.
 - Rede física sem Loja 93: **20.061 pares** recomendados, **993.649 unidades**, com **R$ 5,7M** de investimento conhecido.
-- Loja 93/B2B: **263 pares** recomendados, **25.796 unidades**, com **R$ 2,0M** de investimento conhecido.
+- Loja 93/B2B: **296 pares** recomendados, **26.265 unidades**, com **R$ 2,1M** de investimento conhecido (a demanda B2B recalculada reclassifica **37 pares** como CRÍTICO/ATENÇÃO que ficariam fora da fila se herdassem o status da Etapa 2).
 - Apenas **9,7%** dos pares recomendados têm custo válido; portanto, o plano é mais operacional do que financeiro até completar custos por SKU.
 - Categoria com maior volume recomendado na rede física: `C - PISOS E REVESTIMENTOS` (**264.264 unidades**). Loja física com maior volume: loja 3 (SALVADOR-BA), com **166.885 unidades**.
 - A fila operacional da rede física tem **2.007 pares de prioridade ALTA**.
